@@ -1,0 +1,203 @@
+<!DOCTYPE HTML>
+<html lang="en">
+
+<head>
+    <title>file dropzone</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="description" content="NYCU dropzone">
+    <meta name="keywords" content="dropzone, NYCU, JavaScript">
+    <meta name="author" content="alankingdom">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <script src="views\js\node_modules\jquery\dist\jquery.min.js"></script>
+    <script src="views\js\node_modules\bootstrap\dist\js\bootstrap.min.js"></script>
+    <script src="views\js\node_modules\dropzone\dist\dropzone.js"></script>
+    <script src="views\js\node_modules\@fortawesome\fontawesome-free\js\all.js"></script>
+    <script src="https://code.iconify.design/2/2.0.3/iconify.min.js"></script>
+
+    <link rel="stylesheet" href="views\js\node_modules\bootstrap\dist\css\bootstrap.min.css">
+    <link rel="stylesheet" href="views\js\node_modules\dropzone\dist\dropzone.css">
+    <link rel="stylesheet" href="views\js\node_modules\@fortawesome\fontawesome-free\css\fontawesome.min.css">
+    <link rel="stylesheet" href="views\js\node_modules\@fortawesome\fontawesome-free\css\all.min.css">
+    <link rel="stylesheet" href="views\css\my.css">
+
+    <style>
+        th {
+            text-align: center;
+            vertical-align: middle;
+            font-size: large;
+        }
+
+        td {
+            text-align: center;
+            font-size: medium;
+        }
+
+        .dropzone {
+            display: flex;
+            background-color: rgba(226, 226, 226, 0.822);
+            justify-content: center;
+            vertical-align: baseline;
+            height: 350px;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- NAV BAR START -->
+    <div class="pos-f-t">
+        <div class="collapse  show" id="navbarToggleExternalContent">
+            <div class="bg-dark p-4">
+                <h2 class="text-white">檔案伺服器</h2>
+                <span class="text-muted">快速、輕鬆、便捷的管理雲端資料.</span>
+            </div>
+        </div>
+        <nav class="navbar navbar-dark bg-dark">
+            <button class="navbar-toggler" type="button" data-toggle="collapse"
+                data-target="#navbarToggleExternalContent" aria-controls="navbarToggleExternalContent"
+                aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </nav>
+    </div>
+    <!-- NAV BAR END -->
+    <!-- DOWNLOAD -->
+    <div id="download_block" style="background-color:whitesmoke;" >
+        <div class="container">
+            <h2 class="text-center">檔案下載</h2>
+            <div class="row">
+                <div>
+                    <h4>當前的位置是: &ensp;</h4>
+                </div>
+                <div>
+                    <h4 id="current_path" class="text-dark"></h4>
+                </div>
+                <div class="col mb-2">
+                    <button onclick="Go_Back()" id="back_button" type="button"
+                        class="btn btn-outline-danger">回上一層</button>
+
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table border">
+                        <thead>
+                            <tr>
+                                <th>檔案名稱</th>
+                                <th>檔案大小</th>
+                                <th>更動時間</th>
+                                <th>動作</th>
+                            </tr>
+                            <tr>
+                                <form method="GET" onsubmit="return CreateFolder();">
+                                    <td colspan="4" class="align-middle">
+                                        <div class="input-group ">
+                                            <input type="text" autocomplete="off" id="input_folder"
+                                                class="form-control input-lg" placeholder="新增資料夾的名稱"
+                                                aria-label="Recipient's username" aria-describedby="basic-addon2"
+                                                style="font-size: large;" required>
+                                            <div class="input-group-append">
+                                                <button type="submit" class="btn btn-primary"
+                                                    id="basic-addon2">添加</button>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </form>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody1">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+        <!-- UPLOAD -->
+        <div class="" id="upload_block">
+            <h2 class="text-center mt-4" style="color: rgb(0,0,0);">檔案接收</h2>
+            <div class=>
+                <div class="container">
+                    <!-- HTML heavily inspired by https://blueimp.github.io/jQuery-File-Upload/ -->
+                    <div id="actions" class="row">
+                        <div class="col-lg-7">
+                            <!-- The fileinput-button span is used to style the file input field as button -->
+                            <span class="btn btn-success fileinput-button  dz-clickable">
+                                <i class="fas fa-plus"></i>
+                                <span>添加檔案...</span>
+                            </span>
+                            <button type="submit" class="btn btn-primary start">
+                                <i class="fas fa-upload"></i>
+                                <span>全部上傳</span>
+                            </button>
+                            <button type="reset" class="btn btn-warning cancel ">
+                                <i class="fas fa-ban"></i>
+                                <span>清除上傳紀錄</span>
+                            </button>
+                        </div>
+    
+                        <div class="col-lg-5  mt-2">
+                            <!-- The global file processing state -->
+                            <span class="fileupload-process">
+                                <div id="total-progress" class="progress progress-striped active" role="progressbar"
+                                    aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                                    <div class="progress-bar progress-bar-success" style="width:0%;"
+                                        data-dz-uploadprogress="">
+                                    </div>
+                                </div>
+                            </span>
+                        </div>
+                    </div>
+    
+                    <!-- second dropzone -->
+                    <div>
+    
+                        <form action="/" class="dropzone mb-5" id="second_dropzone"></form>
+                    </div>
+                    <!-- second dropzone -->
+    
+                    <div class="table  table-striped   files" id="previews">
+                        <div id="template" class="file-row" >
+                            <!--  -->
+                            <!-- This is used as the file preview template -->
+                            <div>
+                                <span class="preview"><img data-dz-thumbnail></span>
+                            </div>
+                            <div>
+                                <p class="name" data-dz-name></p>
+                                <strong class="error text-danger" data-dz-errormessage></strong>
+                            </div>
+                            <div>
+                                <p class="size" data-dz-size></p>
+                                <div class="progress progress-striped active" role="progressbar" aria-valuemin="0"
+                                    aria-valuemax="100" aria-valuenow="0">
+                                    <div class="progress-bar progress-bar-success" style="width:0%;" data-dz-uploadprogress>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <button class="btn btn-primary start">
+                                    <i class="fas fa-upload"></i>
+                                    <span>開始</span>
+                                </button>
+                                <button data-dz-remove class="btn btn-warning cancel">
+                                    <i class="fas fa-ban"></i>
+                                    <span>取消</span>
+                                </button>
+                                <button data-dz-remove class="btn btn-danger delete">
+                                    <i class="fas fa-trash"></i>
+                                    <span>清除</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- <hr /> -->
+        <!-- UPLOAD END -->
+</body>
+
+</html>
+
+<script src="views\js\my.js"></script>

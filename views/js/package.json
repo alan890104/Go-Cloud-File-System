@@ -1,0 +1,17 @@
+{
+  "name": "bookkeeping",
+  "version": "1.0.1",
+  "description": "",
+  "main": "my.js",
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "^5.15.4",
+    "bootstrap": "^4.0.0",
+    "dropzone": "^4.3.0",
+    "jquery": "^3.6.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
