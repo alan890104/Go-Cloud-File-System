@@ -277,24 +277,23 @@ function display_folder(ele) {
                                         <i class="fas fa-cloud-download-alt"></i> \
                                         <span>下載全部</span> \
                                     </a>'
-        tableData += '<a  href="/" class="btn btn-warning" style="center" \
-        onclick="ChangePath('+ "'" + filename + "'" + ')"  > \
-        <i class="fas fa-external-link-alt"></i> \
-        <span>進入</span> \
-    </a>'
         tableData += '<a  href="/" class="btn btn-danger" style="center" \
                         onclick="delFile('+ "'" + filename + "'" + ')"  > \
                         <i class="fas fa-trash"></i> \
                         <span>刪除</span> \
-                    </a>\
-                </td>\n'
+                    </a>'
+        tableData += '<a  href="/" class="btn btn-warning" style="center" \
+                onclick="ChangePath('+ "'" + filename + "'" + ')"  > \
+                <i class="fas fa-external-link-alt"></i> \
+                <span>進入</span> \
+            </a></td>\n'
         tableData += "</tr>\n"
     }
     return tableData
 }
 
 current_path = ""
-list_folders = [] 
+list_folders = []
 function reload_download_list() {
     $.ajax({
         type: "GET",
@@ -315,12 +314,12 @@ function reload_download_list() {
             } else {
                 var path_list = current_path.split("/")
                 // console.log(path_list)
-                for(var i=0;i<path_list.length;i++){
-                    if(i==path_list.length-1){
-                        $("#current_path_bread").append('<li class="breadcrumb-item" aria-current="page">'+path_list[i]+'</li>')
-                    }else{
-                        var action = "Go_abs_Path('"+path_list.slice(0,i+1).join('/')+"')" 
-                        $("#current_path_bread").append('<li class="breadcrumb-item"><a href="#" onclick="'+action+'">'+path_list[i]+'</a></li>')
+                for (var i = 0; i < path_list.length; i++) {
+                    if (i == path_list.length - 1) {
+                        $("#current_path_bread").append('<li class="breadcrumb-item" aria-current="page">' + path_list[i] + '</li>')
+                    } else {
+                        var action = "Go_abs_Path('" + path_list.slice(0, i + 1).join('/') + "')"
+                        $("#current_path_bread").append('<li class="breadcrumb-item"><a href="#" onclick="' + action + '">' + path_list[i] + '</a></li>')
                     }
                 }
                 $("#back_button").show()
@@ -330,7 +329,7 @@ function reload_download_list() {
     });
 }
 
-function Go_abs_Path(dir){
+function Go_abs_Path(dir) {
     $.ajax({
         type: "POST",
         url: "/Go_abs_Path",
@@ -377,7 +376,7 @@ function CreateFolder() {
 SELECT_ZONE = undefined
 
 //  add right click menu to table
-$("table").on("DOMSubtreeModified",function(){
+$("table").on("DOMSubtreeModified", function () {
     $(".right_click").on('contextmenu', function (e) {
         $('.right_click').css('box-shadow', 'none');
         var top = e.pageY + 10;
@@ -391,23 +390,23 @@ $("table").on("DOMSubtreeModified",function(){
         SELECT_ZONE = $(this);
         return false; //blocks default Webbrowser right click menu
     });
-    
+
     $("body").on("click", function () {
         if ($("#menu").css('display') == 'block') {
             $(" #menu ").hide();
         }
         $('.right_click').css('box-shadow', 'none');
     });
-    
+
     // $("#menu button").on("click", function () {
     //     $(this).parent().hide();
     // });
 })
 
-$(".rename").on("click",function(e){
-    if (SELECT_ZONE!=undefined){
+$(".rename").on("click", function (e) {
+    if (SELECT_ZONE != undefined) {
         var new_fname = prompt("輸入新的檔案名稱(不包含副檔名): ");
-        if (new_fname!=null){
+        if (new_fname != null) {
             var old_name = SELECT_ZONE.children(".fname").children(".strong_title").html().trim();
 
             var regexss = /[^\w_-]+/
@@ -415,18 +414,18 @@ $(".rename").on("click",function(e){
                 alert("添加的路徑不得含有除了底線與減號外的字元")
                 return false
             }
-            else{
+            else {
                 $.ajax({
                     type: "POST",
                     url: "/rename",
-                    data:{
-                        "oldname":old_name,
-                        "newname":new_fname,
+                    data: {
+                        "oldname": old_name,
+                        "newname": new_fname,
                     },
                     success: function (msg) {
                         reload_download_list();
                     },
-                    fail:function(msg){
+                    fail: function (msg) {
                         alert(msg.responseText);
                     }
                 });
@@ -437,41 +436,41 @@ $(".rename").on("click",function(e){
 })
 
 
-$(".moveto").on("mouseenter",function(){
-    
-    if (SELECT_ZONE!=undefined){
+$(".moveto").on("mouseenter", function () {
+
+    if (SELECT_ZONE != undefined) {
         var fname = SELECT_ZONE.children(".fname").children(".strong_title").html().trim();
         // alert(fname)
         submenu = $(this).parent().children("ul")
         submenu.text("")
-        var html_text = '<li><button class="dropdown-item bg-light" onclick="MoveToFolder('+"'$-parent-$'"+')">上一層</button></li>'
+        var html_text = '<li><button class="dropdown-item bg-light" onclick="MoveToFolder(' + "'$-parent-$'" + ')">上一層</button></li>'
         submenu.append(html_text)
-        for(var i=0;i<list_folders.length;i++){
-            console.log(fname,list_folders[i])
-            if(fname!=list_folders[i]){
-                var html_text = '<li><button class="dropdown-item" onclick="MoveToFolder('+"'"+list_folders[i]+"'"+')" >'+list_folders[i]+'</button></li>';
+        for (var i = 0; i < list_folders.length; i++) {
+            console.log(fname, list_folders[i])
+            if (fname != list_folders[i]) {
+                var html_text = '<li><button class="dropdown-item" onclick="MoveToFolder(' + "'" + list_folders[i] + "'" + ')" >' + list_folders[i] + '</button></li>';
                 submenu.append(html_text);
             }
-            
+
         }
     }
 })
 
-function MoveToFolder(foldername){
-    if (SELECT_ZONE!=undefined){
+function MoveToFolder(foldername) {
+    if (SELECT_ZONE != undefined) {
         var fname = SELECT_ZONE.children(".fname").children(".strong_title").html().trim();
         $.ajax({
             type: "POST",
-            async:false,
+            async: false,
             url: "/movetofolder",
-            data:{
-                "filename":fname,
-                "foldername":foldername,
+            data: {
+                "filename": fname,
+                "foldername": foldername,
             },
             success: function () {
                 reload_download_list()
             },
-            error: function(msg){
+            error: function (msg) {
                 alert(msg.responseText)
             }
         });

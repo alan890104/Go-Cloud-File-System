@@ -44,6 +44,7 @@ func Go_Back(ctx *gin.Context) {
 		return
 	}
 	CUR_UPLOAD_PATH = filepath.Dir(CUR_UPLOAD_PATH)
+	CUR_UPLOAD_PATH = strings.ReplaceAll(CUR_UPLOAD_PATH, "\\", "/")
 	fmt.Println("Back to parent folder", CUR_UPLOAD_PATH)
 }
 
