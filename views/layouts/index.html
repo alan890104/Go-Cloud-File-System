@@ -40,6 +40,30 @@
             vertical-align: baseline;
             height: 350px;
         }
+
+        #menu {
+            display: none;
+        }
+
+        .dropdown-menu li {
+            position: relative;
+        }
+
+        .dropdown-menu .dropdown-submenu {
+            display: none;
+            position: absolute;
+            left: 100%;
+            top: -7px;
+        }
+
+        .dropdown-menu .dropdown-submenu-left {
+            right: 100%;
+            left: auto;
+        }
+
+        .dropdown-menu>li:hover>.dropdown-submenu {
+            display: block;
+        }
     </style>
 
 </head>
@@ -64,20 +88,18 @@
     </div>
     <!-- NAV BAR END -->
     <!-- DOWNLOAD -->
-    <div id="download_block" style="background-color:whitesmoke;" >
+    <div id="download_block" style="background-color:whitesmoke; height: 700px;">
         <div class="container">
-            <h2 class="text-center">檔案下載</h2>
+            <h2 class="text-center mt-2">檔案下載</h2>
             <div class="row">
-                <div>
-                    <h4>當前的位置是: &ensp;</h4>
-                </div>
-                <div>
-                    <h4 id="current_path" class="text-dark"></h4>
-                </div>
-                <div class="col mb-2">
-                    <button onclick="Go_Back()" id="back_button" type="button"
-                        class="btn btn-outline-danger">回上一層</button>
-
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb" id="current_path_bread">
+                        <li>當前的位置是: &ensp;</li>
+                    </ol>
+                </nav>
+                <div class="col">
+                    <button onclick="Go_Back()" id="back_button" type="button" class="btn btn-outline-danger btn-lg"><i
+                            class="fas fa-outdent"></i>回上一層</button>
                 </div>
 
                 <div class="table-responsive">
@@ -103,100 +125,120 @@
                                             </div>
                                         </div>
                                     </td>
+                                    <!-- menu template -->
+                                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton" id="menu">
+                                        <li>
+                                            <button type="button" class="dropdown-item moveto">
+                                                移動到
+                                                <i class="fas fa-caret-right"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-submenu">
+                                                
+                                            </ul>
+                                        </li>
+                                        <li>
+                                            <button type="button" class="dropdown-item rename">
+                                                重新命名為...
+                                            </button>
+
+                                        </li>
+                                    </ul>
                                 </form>
                             </tr>
                         </thead>
                         <tbody id="tbody1">
                         </tbody>
                     </table>
+
                 </div>
             </div>
         </div>
     </div>
-        <!-- UPLOAD -->
-        <div class="" id="upload_block">
-            <h2 class="text-center mt-4" style="color: rgb(0,0,0);">檔案接收</h2>
-            <div class=>
-                <div class="container">
-                    <!-- HTML heavily inspired by https://blueimp.github.io/jQuery-File-Upload/ -->
-                    <div id="actions" class="row">
-                        <div class="col-lg-7">
-                            <!-- The fileinput-button span is used to style the file input field as button -->
-                            <span class="btn btn-success fileinput-button  dz-clickable">
-                                <i class="fas fa-plus"></i>
-                                <span>添加檔案...</span>
-                            </span>
-                            <button type="submit" class="btn btn-primary start">
+    <!-- UPLOAD -->
+    <div class="" id="upload_block">
+        <h2 class="text-center mt-4" style="color: rgb(0,0,0);">檔案接收</h2>
+        <div class=>
+            <div class="container">
+                <!-- HTML heavily inspired by https://blueimp.github.io/jQuery-File-Upload/ -->
+                <div id="actions" class="row">
+                    <div class="col-lg-7">
+                        <!-- The fileinput-button span is used to style the file input field as button -->
+                        <span class="btn btn-success fileinput-button  dz-clickable">
+                            <i class="fas fa-plus"></i>
+                            <span>添加檔案...</span>
+                        </span>
+                        <button type="submit" class="btn btn-primary start">
+                            <i class="fas fa-upload"></i>
+                            <span>全部上傳</span>
+                        </button>
+                        <button type="reset" class="btn btn-warning cancel ">
+                            <i class="fas fa-ban"></i>
+                            <span>清除上傳紀錄</span>
+                        </button>
+                    </div>
+
+                    <div class="col-lg-5  mt-2">
+                        <!-- The global file processing state -->
+                        <span class="fileupload-process">
+                            <div id="total-progress" class="progress progress-striped active" role="progressbar"
+                                aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                                <div class="progress-bar progress-bar-success" style="width:0%;"
+                                    data-dz-uploadprogress="">
+                                </div>
+                            </div>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- second dropzone -->
+                <div>
+
+                    <form action="/" class="dropzone mb-5" id="second_dropzone"></form>
+                </div>
+                <!-- second dropzone -->
+
+                <div class="table  table-striped   files" id="previews">
+                    <div id="template" class="file-row">
+                        <!--  -->
+                        <!-- This is used as the file preview template -->
+                        <div>
+                            <span class="preview"><img data-dz-thumbnail></span>
+                        </div>
+                        <div>
+                            <p class="name" data-dz-name></p>
+                            <strong class="error text-danger" data-dz-errormessage></strong>
+                        </div>
+                        <div>
+                            <p class="size" data-dz-size></p>
+                            <div class="progress progress-striped active" role="progressbar" aria-valuemin="0"
+                                aria-valuemax="100" aria-valuenow="0">
+                                <div class="progress-bar progress-bar-success" style="width:0%;" data-dz-uploadprogress>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <button class="btn btn-primary start">
                                 <i class="fas fa-upload"></i>
-                                <span>全部上傳</span>
+                                <span>開始</span>
                             </button>
-                            <button type="reset" class="btn btn-warning cancel ">
+                            <button data-dz-remove class="btn btn-warning cancel">
                                 <i class="fas fa-ban"></i>
-                                <span>清除上傳紀錄</span>
+                                <span>取消</span>
                             </button>
-                        </div>
-    
-                        <div class="col-lg-5  mt-2">
-                            <!-- The global file processing state -->
-                            <span class="fileupload-process">
-                                <div id="total-progress" class="progress progress-striped active" role="progressbar"
-                                    aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-                                    <div class="progress-bar progress-bar-success" style="width:0%;"
-                                        data-dz-uploadprogress="">
-                                    </div>
-                                </div>
-                            </span>
-                        </div>
-                    </div>
-    
-                    <!-- second dropzone -->
-                    <div>
-    
-                        <form action="/" class="dropzone mb-5" id="second_dropzone"></form>
-                    </div>
-                    <!-- second dropzone -->
-    
-                    <div class="table  table-striped   files" id="previews">
-                        <div id="template" class="file-row" >
-                            <!--  -->
-                            <!-- This is used as the file preview template -->
-                            <div>
-                                <span class="preview"><img data-dz-thumbnail></span>
-                            </div>
-                            <div>
-                                <p class="name" data-dz-name></p>
-                                <strong class="error text-danger" data-dz-errormessage></strong>
-                            </div>
-                            <div>
-                                <p class="size" data-dz-size></p>
-                                <div class="progress progress-striped active" role="progressbar" aria-valuemin="0"
-                                    aria-valuemax="100" aria-valuenow="0">
-                                    <div class="progress-bar progress-bar-success" style="width:0%;" data-dz-uploadprogress>
-                                    </div>
-                                </div>
-                            </div>
-                            <div>
-                                <button class="btn btn-primary start">
-                                    <i class="fas fa-upload"></i>
-                                    <span>開始</span>
-                                </button>
-                                <button data-dz-remove class="btn btn-warning cancel">
-                                    <i class="fas fa-ban"></i>
-                                    <span>取消</span>
-                                </button>
-                                <button data-dz-remove class="btn btn-danger delete">
-                                    <i class="fas fa-trash"></i>
-                                    <span>清除</span>
-                                </button>
-                            </div>
+                            <button data-dz-remove class="btn btn-danger delete">
+                                <i class="fas fa-trash"></i>
+                                <span>清除</span>
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <!-- <hr /> -->
-        <!-- UPLOAD END -->
+    </div>
+    <!-- <hr /> -->
+    <!-- UPLOAD END -->
 </body>
+
 
 </html>
 

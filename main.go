@@ -25,15 +25,26 @@ type BasicFileInfo struct {
 	Time string `json:"Time"`
 }
 
+// goto folder by absolute path
+func Go_abs_Path(ctx *gin.Context) {
+	pathname := ctx.PostForm("pathname")
+	CUR_UPLOAD_PATH = path.Join(STATIC_UPLOAD_PATH, pathname)
+	fmt.Println("Goto abs path", CUR_UPLOAD_PATH)
+}
+
+// goto subfolder
 func Go_To_Path(ctx *gin.Context) {
 	subfolder := ctx.PostForm("subfolder")
 	CUR_UPLOAD_PATH = path.Join(CUR_UPLOAD_PATH, subfolder)
-	fmt.Println(CUR_UPLOAD_PATH)
+	fmt.Println("Goto subfolder ", CUR_UPLOAD_PATH)
 }
 
 func Go_Back(ctx *gin.Context) {
+	if CUR_UPLOAD_PATH == STATIC_UPLOAD_PATH {
+		return
+	}
 	CUR_UPLOAD_PATH = filepath.Dir(CUR_UPLOAD_PATH)
-	fmt.Println(CUR_UPLOAD_PATH)
+	fmt.Println("Back to parent folder", CUR_UPLOAD_PATH)
 }
 
 func UploadFile(ctx *gin.Context) {
@@ -170,25 +181,85 @@ func CreateFolder(ctx *gin.Context) {
 	log.Println("Create success")
 }
 
-func MoveTo(ctx *gin.Context) {
-	oldLocation := ctx.PostForm("oldLocation")
-	newLocation := ctx.PostForm("newLocation")
+func RenamePath(ctx *gin.Context) {
+	oldname := ctx.PostForm("oldname")
+	newname := ctx.PostForm("newname")
+	oldLocation := path.Join(CUR_UPLOAD_PATH, oldname)
 	f, err := os.Stat(oldLocation)
 	if err != nil {
-		log.Fatal("err is ", err)
+		log.Fatal("Err on filename ", oldLocation, err, newname)
+		ctx.String(http.StatusBadRequest, err.Error())
 		return
 	}
 	switch mode := f.Mode(); {
 	case mode.IsDir():
+		parent := filepath.Dir(oldLocation)
+		newLocation := path.Join(parent, newname)
+		err := os.Rename(oldLocation, newLocation)
+		if err != nil {
+			log.Fatal("Error when rename", err)
+			ctx.String(http.StatusBadRequest, err.Error())
+		}
 		return
 	case mode.IsRegular():
+		extension := filepath.Ext(f.Name())
+		parent := filepath.Dir(oldLocation)
+		newLocation := path.Join(parent, newname+extension)
+		log.Printf("The file name is %s and its extension is %s", parent, extension)
+		err := os.Rename(oldLocation, newLocation)
+		if err != nil {
+			log.Fatal("Error when rename", err)
+			ctx.String(http.StatusBadRequest, err.Error())
+		}
 		return
 	}
-	fmt.Println(oldLocation, newLocation)
-	err = os.Rename(oldLocation, newLocation)
-	if err != nil {
-		log.Fatal(err)
+}
+
+func MoveToFolder(ctx *gin.Context) {
+	filename := ctx.PostForm("filename")
+	foldername := ctx.PostForm("foldername")
+	fileLocation := path.Join(CUR_UPLOAD_PATH, filename)
+	if foldername == "$-parent-$" {
+		if CUR_UPLOAD_PATH == STATIC_UPLOAD_PATH {
+			ctx.String(http.StatusBadRequest, "不可以將檔案移動至根目錄之外")
+			return
+		} else {
+			parent := filepath.Dir(CUR_UPLOAD_PATH)
+			newLocation := path.Join(parent, filename)
+			os.Rename(fileLocation, newLocation)
+			return
+		}
 	}
+	folderLocation := path.Join(CUR_UPLOAD_PATH, foldername)
+	f, err := os.Stat(fileLocation)
+	if err != nil {
+		log.Fatal("Err on filename ", fileLocation, err)
+		ctx.String(http.StatusBadRequest, err.Error())
+		return
+	}
+	switch mode := f.Mode(); {
+	case mode.IsDir():
+		{
+			newLocation := path.Join(folderLocation, filename)
+			os.Rename(fileLocation, newLocation)
+			return
+		}
+	case mode.IsRegular():
+		{
+			_, err = os.Stat(folderLocation)
+			if err != nil {
+				log.Fatal("Err on foldername ", folderLocation, err)
+				return
+			}
+			newLocation := path.Join(folderLocation, filename)
+			err = os.Rename(fileLocation, newLocation)
+			if err != nil {
+				log.Fatal("Error when rename", err)
+				ctx.String(http.StatusBadRequest, err.Error())
+			}
+		}
+	}
+
 }
 
 func IndexPage(ctx *gin.Context) {
@@ -203,12 +274,14 @@ func main() {
 
 	router.GET("/", IndexPage)
 	router.POST("/", UploadFile)
-	router.POST("ChangePath", Go_To_Path)
+	router.POST("/ChangePath", Go_To_Path)
+	router.POST("/Go_abs_Path", Go_abs_Path)
 	router.GET("/Go_Back", Go_Back)
 	router.GET("/ls", ListFile)
 	router.GET("downloads/:filename", DownloadFile)
 	router.POST("/delete/:filename", DeleteFile)
 	router.GET("/create/:foldername", CreateFolder)
-	router.POST("/move", MoveTo)
+	router.POST("/rename", RenamePath)
+	router.POST("/movetofolder", MoveToFolder)
 	router.Run(":5000")
 }
