@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"bookkeeping/utils"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -17,8 +18,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var STATIC_UPLOAD_PATH string = "uploads" //cannot be changed
-var CUR_UPLOAD_PATH string = "uploads"    //may update by user
+var ROOT_UPLOAD_PATH string = "uploads"       //cannot be changed
+var CUR_UPLOAD_PATH string = ROOT_UPLOAD_PATH //may update by user
 
 type BasicFileInfo struct {
 	Name string `json:"Name"`
@@ -29,7 +30,7 @@ type BasicFileInfo struct {
 // goto folder by absolute path
 func Go_abs_Path(ctx *gin.Context) {
 	pathname := ctx.PostForm("pathname")
-	CUR_UPLOAD_PATH = path.Join(STATIC_UPLOAD_PATH, pathname)
+	CUR_UPLOAD_PATH = path.Join(ROOT_UPLOAD_PATH, pathname)
 	fmt.Println("Goto abs path", CUR_UPLOAD_PATH)
 }
 
@@ -41,7 +42,7 @@ func Go_To_Path(ctx *gin.Context) {
 }
 
 func Go_Back(ctx *gin.Context) {
-	if CUR_UPLOAD_PATH == STATIC_UPLOAD_PATH {
+	if CUR_UPLOAD_PATH == ROOT_UPLOAD_PATH {
 		return
 	}
 	CUR_UPLOAD_PATH = filepath.Dir(CUR_UPLOAD_PATH)
@@ -90,7 +91,7 @@ func ListFile(ctx *gin.Context) {
 		}
 	}
 	session := sessions.Default(ctx)
-	current_path := strings.TrimPrefix(CUR_UPLOAD_PATH, STATIC_UPLOAD_PATH)
+	current_path := strings.TrimPrefix(CUR_UPLOAD_PATH, ROOT_UPLOAD_PATH)
 	ctx.JSON(http.StatusOK, gin.H{
 		"file":         data,
 		"folder":       folder,
@@ -225,7 +226,7 @@ func MoveToFolder(ctx *gin.Context) {
 	foldername := ctx.PostForm("foldername")
 	fileLocation := path.Join(CUR_UPLOAD_PATH, filename)
 	if foldername == "$-parent-$" {
-		if CUR_UPLOAD_PATH == STATIC_UPLOAD_PATH {
+		if CUR_UPLOAD_PATH == ROOT_UPLOAD_PATH {
 			ctx.String(http.StatusBadRequest, "不可以將檔案移動至根目錄之外")
 			return
 		} else {
@@ -265,6 +266,26 @@ func MoveToFolder(ctx *gin.Context) {
 		}
 	}
 
+}
+
+func FreeSpace(ctx *gin.Context) {
+	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		log.Fatal("Error on os.Getwd", err)
+		ctx.String(http.StatusInternalServerError, err.Error())
+	}
+	ds, err := utils.Disk_Space(dir)
+	if err != nil {
+		log.Fatal("Error on Disk_Space", err)
+		ctx.String(http.StatusInternalServerError, err.Error())
+	}
+	usedpercent := fmt.Sprintf("%.3f%%", utils.SpaceUsedPercent(ds)*100)
+	ctx.JSON(http.StatusOK, gin.H{
+		"percent": usedpercent,
+		"use":     utils.ByteFormat(utils.SpaceUsed(ds)),
+		"free":    utils.ByteFormat(ds.FreeByte),
+	})
+	// log.Println("Return disk usage percent :", usedpercent)
 }
 
 func IndexPage(ctx *gin.Context) {
@@ -321,6 +342,14 @@ func Login_Render(ctx *gin.Context) {
 	ctx.HTML(http.StatusOK, "login.html", nil)
 }
 
+func Logout(ctx *gin.Context) {
+	session := sessions.Default(ctx)
+	session.Clear()
+	session.Options(sessions.Options{MaxAge: -1})
+	session.Save()
+	ctx.Redirect(http.StatusMovedPermanently, "/login")
+}
+
 func engine() *gin.Engine {
 	r := gin.New()
 	r.MaxMultipartMemory = 2 << 32
@@ -346,6 +375,8 @@ func engine() *gin.Engine {
 		r.GET("/create/:foldername", CreateFolder)
 		r.POST("/rename", RenamePath)
 		r.POST("/movetofolder", MoveToFolder)
+		r.GET("/freespace", FreeSpace)
+		r.GET("/logout", Logout)
 	}
 	return r
 }

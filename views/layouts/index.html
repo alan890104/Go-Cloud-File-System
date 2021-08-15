@@ -74,16 +74,23 @@
     <div class="pos-f-t">
         <div class="collapse  show" id="navbarToggleExternalContent">
             <div class="bg-dark p-4">
-                <h2 class="text-white">檔案伺服器</h2>
+                <!-- <div class="row"> -->
+                    <h2 class="text-white">檔案伺服器</h2>
+                    
+                <!-- </div> -->
                 <span class="text-muted">快速、輕鬆、便捷的管理雲端資料.</span>
             </div>
         </div>
+        
         <nav class="navbar navbar-dark bg-dark">
             <button class="navbar-toggler" type="button" data-toggle="collapse"
                 data-target="#navbarToggleExternalContent" aria-controls="navbarToggleExternalContent"
                 aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
+            <a class="btn border-light text-light col-2" href="/logout">
+                <i class="fa fa-sign-out-alt" style="color: white;"></i>登出
+            </a>
         </nav>
     </div>
     <!-- NAV BAR END -->
@@ -133,7 +140,7 @@
                                                 <i class="fas fa-caret-right"></i>
                                             </button>
                                             <ul class="dropdown-menu dropdown-submenu">
-                                                
+
                                             </ul>
                                         </li>
                                         <li>
@@ -157,7 +164,7 @@
     <!-- UPLOAD -->
     <div class="" id="upload_block">
         <h2 class="text-center mt-4" style="color: rgb(0,0,0);">檔案上傳</h2>
-        <div class=>
+        <div>
             <div class="container">
                 <!-- HTML heavily inspired by https://blueimp.github.io/jQuery-File-Upload/ -->
                 <div id="actions" class="row">
@@ -189,6 +196,17 @@
                         </span>
                     </div>
                 </div>
+
+                <!-- DISK SPACE -->
+                <div class="row-lg-12  mt-2 mb-5">
+                    <div class="progress" style="height: 30px;">
+                        <div class="progress-bar disk_space_bar text-dark" id="disk_space" role="progressbar"
+                            style="width: 50%" aria-valuemin="0" aria-valuemax="100">
+                        </div>
+                    </div>
+                    <label for="disk_space" id="disk_space_text" style="margin-top: 1ex;"></label>
+                </div>
+                <!-- DISK SPACE -->
 
                 <!-- second dropzone -->
                 <div>

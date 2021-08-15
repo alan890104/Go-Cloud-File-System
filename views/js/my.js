@@ -323,6 +323,7 @@ function display_folder(ele) {
 
 current_path = ""
 list_folders = []
+permission = ""
 function reload_download_list() {
     $.ajax({
         type: "GET",
@@ -338,6 +339,7 @@ function reload_download_list() {
             $("#tbody1").html(tableData);
             if(all_files["permission"]=="visitor"){
                 $(".del_button").hide()
+                permission=all_files["permission"]
             }
             $('.breadcrumb-item').remove();
             if (current_path.length == 0) {
@@ -382,19 +384,40 @@ function Go_Back() {
     });
 }
 
+function GetFreeSpace(){
+    $.ajax({
+        method:"GET",
+        url:"/freespace",
+        success:function(data){
+            $("#disk_space").css("width",data["percent"])
+            var label_text = `儲存空間使用了 ${data['free']} 中的 ${data['use']}， 約為(${data['percent']})`
+            $("#disk_space_text").text(label_text);
+            var num = parseFloat(data["percent"].slice(0,data["percent"].length-1))
+            if(num<60.0){
+                $("#disk_space").css("background-color", "green")
+            }else if(num>=60 && num<=80){
+                $("#disk_space").css("background-color", "yellow")
+            }else{
+                $("#disk_space").css("background-color", "red")
+            }
+        }
+    });
+}
+
 window.onload = function () {
     reload_download_list()
+    GetFreeSpace()
 }
 
 
 function CreateFolder() {
     var folder = document.getElementById("input_folder").value
     document.getElementById("input_folder").value = ""
-    var regexss = /[^\w_-]+/
-    if (folder.match(regexss) != null) {
-        alert("添加的路徑不得含有除了底線與減號外的字元")
-        return false
-    }
+    // var regexss = /[^\w_-]+/
+    // if (folder.match(regexss) != null) {
+    //     alert("添加的路徑不得含有除了底線與減號外的字元")
+    //     return false
+    // }
     $.ajax({
         type: "GET",
         url: "/create/" + folder,
@@ -409,6 +432,9 @@ SELECT_ZONE = undefined
 
 //  add right click menu to table
 $("table").on("DOMSubtreeModified", function () {
+    if(permission=="" || permission=="visitor"){
+        return
+    }
     $(".right_click").on('contextmenu', function (e) {
         $('.right_click').css('box-shadow', 'none');
         var top = e.pageY + 10;
@@ -441,27 +467,28 @@ $(".rename").on("click", function (e) {
         if (new_fname != null) {
             var old_name = SELECT_ZONE.children(".fname").children(".strong_title").html().trim();
 
-            var regexss = /[^\w_-]+/
-            if (new_fname.match(regexss) != null) {
-                alert("添加的路徑不得含有除了底線與減號外的字元")
-                return false
-            }
-            else {
-                $.ajax({
-                    type: "POST",
-                    url: "/rename",
-                    data: {
-                        "oldname": old_name,
-                        "newname": new_fname,
-                    },
-                    success: function (msg) {
-                        reload_download_list();
-                    },
-                    fail: function (msg) {
-                        alert(msg.responseText);
-                    }
-                });
-            }
+            // var regexss = /[^\w_-]+/
+            // if (new_fname.match(regexss) != null) {
+            //     alert("添加的路徑不得含有除了底線與減號外的字元")
+            //     return false
+            // }
+            // else {
+                
+            // }
+            $.ajax({
+                type: "POST",
+                url: "/rename",
+                data: {
+                    "oldname": old_name,
+                    "newname": new_fname,
+                },
+                success: function (msg) {
+                    reload_download_list();
+                },
+                fail: function (msg) {
+                    alert(msg.responseText);
+                }
+            });
         }
     }
     SELECT_ZONE = undefined;
