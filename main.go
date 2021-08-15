@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
 
@@ -51,9 +52,10 @@ func Go_Back(ctx *gin.Context) {
 func UploadFile(ctx *gin.Context) {
 	file, err := ctx.FormFile("file")
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error": err,
 		})
+		return
 	}
 	err = ctx.SaveUploadedFile(file, filepath.Join(CUR_UPLOAD_PATH, file.Filename))
 	if err != nil {
@@ -87,17 +89,20 @@ func ListFile(ctx *gin.Context) {
 			data = append(data, tmp)
 		}
 	}
+	session := sessions.Default(ctx)
 	current_path := strings.TrimPrefix(CUR_UPLOAD_PATH, STATIC_UPLOAD_PATH)
 	ctx.JSON(http.StatusOK, gin.H{
 		"file":         data,
 		"folder":       folder,
 		"current_path": current_path,
+		"permission":   session.Get("permission"),
 	})
 }
 
 func DownloadFile(ctx *gin.Context) {
 	filename := ctx.Param("filename")
 	targetPath := filepath.Join(CUR_UPLOAD_PATH, filename)
+	log.Println("DownloadFile@", targetPath)
 	f, err := os.Stat(targetPath)
 	if err != nil {
 		log.Fatal("Cannot find file error: ", err)
@@ -124,8 +129,7 @@ func DownloadFile(ctx *gin.Context) {
 			}
 			defer file.Close()
 			// Trim the prefix string to re-produce the same directory
-			base_path_prefix := fmt.Sprintf("%s\\", CUR_UPLOAD_PATH)
-			f, err := ar.Create(strings.TrimPrefix(path, base_path_prefix))
+			f, err := ar.Create(strings.TrimPrefix(strings.ReplaceAll(path, "\\", "/"), CUR_UPLOAD_PATH))
 			if err != nil {
 				return err
 			}
@@ -267,22 +271,89 @@ func IndexPage(ctx *gin.Context) {
 	ctx.HTML(http.StatusOK, "index.html", nil)
 }
 
-func main() {
-	router := gin.Default()
-	router.MaxMultipartMemory = 2 << 32
-	router.Static("/views", "./views")
-	router.LoadHTMLGlob("views/layouts/*")
+func AuthRequired(ctx *gin.Context) {
+	session := sessions.Default(ctx)
+	permission := session.Get("permission")
+	if permission == nil {
+		ctx.Redirect(http.StatusFound, "/login")
+		return
+	}
+	ctx.Next()
+}
 
-	router.GET("/", IndexPage)
-	router.POST("/", UploadFile)
-	router.POST("/ChangePath", Go_To_Path)
-	router.POST("/Go_abs_Path", Go_abs_Path)
-	router.GET("/Go_Back", Go_Back)
-	router.GET("/ls", ListFile)
-	router.GET("downloads/:filename", DownloadFile)
-	router.POST("/delete/:filename", DeleteFile)
-	router.GET("/create/:foldername", CreateFolder)
-	router.POST("/rename", RenamePath)
-	router.POST("/movetofolder", MoveToFolder)
-	router.Run(":5000")
+// Check the correctness of guuid and give the permission
+func Login(ctx *gin.Context) {
+	session := sessions.Default(ctx)
+	guuid := ctx.PostForm("guuid")
+	if guuid == "" {
+		ctx.Redirect(http.StatusFound, "/login")
+		return
+	}
+	log.Println("Get guuid", guuid)
+	switch guuid {
+	case "alankingdom":
+		session.Set("permission", "admin")
+	case "visitor":
+		session.Set("permission", "visitor")
+	default:
+		{
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"err": "無法識別的GUUID",
+			})
+			log.Println("Get guuid", "無法識別的GUUID")
+			return
+		}
+	}
+	session.Options(sessions.Options{
+		MaxAge: 3600 * 24, // 24hrs session
+	})
+	if err := session.Save(); err != nil {
+		session.Delete("permission")
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"err": err.Error(),
+		})
+	}
+	ctx.Redirect(http.StatusFound, "/")
+}
+
+// Show Login Page
+func Login_Render(ctx *gin.Context) {
+	ctx.HTML(http.StatusOK, "login.html", nil)
+}
+
+func engine() *gin.Engine {
+	r := gin.New()
+	r.MaxMultipartMemory = 2 << 32
+	r.Static("/views", "./views")
+	r.LoadHTMLGlob("views/layouts/*")
+
+	store := sessions.NewCookieStore([]byte("secret"))
+	r.Use(sessions.Sessions("mysession", store))
+
+	r.POST("/login", Login)
+	r.GET("/login", Login_Render)
+
+	r.Use(AuthRequired)
+	{
+		r.GET("/", IndexPage)
+		r.POST("/upload", UploadFile)
+		r.POST("/ChangePath", Go_To_Path)
+		r.POST("/Go_abs_Path", Go_abs_Path)
+		r.GET("/Go_Back", Go_Back)
+		r.GET("/ls", ListFile)
+		r.GET("downloads/:filename", DownloadFile)
+		r.POST("/delete/:filename", DeleteFile)
+		r.GET("/create/:foldername", CreateFolder)
+		r.POST("/rename", RenamePath)
+		r.POST("/movetofolder", MoveToFolder)
+	}
+	return r
+}
+
+func main() {
+	router := engine()
+	router.Use(gin.Logger())
+	if err := engine().Run("0.0.0.0:5000"); err != nil {
+		log.Fatal("無法啟動伺服器", err)
+	}
 }

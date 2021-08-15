@@ -6,7 +6,7 @@ var previewTemplate = previewNode.parentNode.innerHTML;
 previewNode.parentNode.removeChild(previewNode);
 
 var myDropzone = new Dropzone(".container", { // Make the whole body a dropzone
-    url: "/", // Set the url
+    url: "/upload", // Set the url
     thumbnailWidth: 80,
     thumbnailHeight: 80,
     parallelUploads: 50,
@@ -57,7 +57,7 @@ document.querySelector("#actions .cancel").onclick = function () {
 
 var SecondDropzone = new Dropzone(
     "#second_dropzone", {
-    url: "/",
+    url: "/upload",
     maxFiles: 50,
     parallelUploads: 50,
     dictDefaultMessage: "或是 將檔案與資料夾拖曳至此直接上傳...",
@@ -119,6 +119,9 @@ function getFileIcon(ext) {
         //csv
         case 'csv':
             return '<i class="fas fa-file-csv"></i>'
+        //tab
+        case 'tab':
+            return '<span class="iconify" data-icon="carbon:cross-tab"></span>'
         //powerpoint
         case 'ppt':
         case 'pptx':
@@ -131,6 +134,7 @@ function getFileIcon(ext) {
         case 'webp':
         case 'bmp':
         case 'gif':
+        case 'img':
             return '<i class="fas fa-images"></i>'
         //video
         case 'avi':
@@ -170,6 +174,22 @@ function getFileIcon(ext) {
         case 'm':
         case 'mat':
             return '<span class="iconify" data-icon="vscode-icons:file-type-matlab"></span>'
+        // c-like
+        case 'c':
+            return '<span class="iconify" data-icon="logos:c"></span>'
+        case 'cpp':
+            return '<span class="iconify" data-icon="logos:c-plusplus"></span>'
+
+        // Other languages
+        case 'pl':
+            return '<span class="iconify" data-icon="logos:perl"></span>'
+        case 'rb':
+            return '<span class="iconify" data-icon="logos:ruby"></span>'
+        case 'php':
+            return '<span class="iconify" data-icon="vscode-icons:file-type-php3"></span>'
+        case 'jsp':
+        case 'jspx':
+            return '<span class="iconify" data-icon="logos:java"></span>'
         //js
         case 'js':
             return '<span class="iconify" data-icon="logos:javascript"></span>'
@@ -182,6 +202,9 @@ function getFileIcon(ext) {
         case 'html':
         case 'htm':
             return '<span class="iconify" data-icon="logos:html-5"></span>'
+        //xml
+        case 'xml':
+            return '<span class="iconify" data-icon="vscode-icons:file-type-xml"></span>'
         //markdown:
         case 'md':
             return '<span class="iconify" data-icon="vscode-icons:file-type-markdown"></span>'
@@ -194,14 +217,21 @@ function getFileIcon(ext) {
             return '<i class="fas fa-file-archive"></i>'
         //db
         case 'db':
-            return '<i class="fas fa-database"></i>'
+        case 'sql':
+        case 'dat':
+            return '<span class="iconify" data-icon="vscode-icons:file-type-sql"></span>'
         //bin
         case 'exe':
         case 'bat':
         case 'dll':
-        case 'dat':
         case 'ini':
             return '<span class="iconify" data-icon="vscode-icons:file-type-binary"></span>'
+        case 'ttf':
+            return '<span class="iconify" data-icon="ant-design:font-size-outlined"></span>'
+        case 'cer':
+            return '<span class="iconify" data-icon="vscode-icons:file-type-cert"></span>'
+        case 'apk':
+            return '<span class="iconify" data-icon="flat-color-icons:android-os"></span>'
         default:
             return '<i class="far fa-file"></i>'
     }
@@ -250,7 +280,7 @@ function display_file(ele) {
                                         <i class="fas fa-download"></i> \
                                         <span>下載</span> \
                                     </a>'
-        tableData += '<a  href="/" class="btn btn-danger" style="center" \
+        tableData += '<a href="/" class="btn btn-danger del_button" style="center" \
                         onclick="delFile('+ "'" + filename + "'" + ')"  > \
                         <i class="fas fa-trash"></i> \
                         <span>刪除</span> \
@@ -266,7 +296,6 @@ function display_folder(ele) {
     for (var i = 0; i < ele.length; i++) {
         var create_time = new Date(ele[i]["Time"])
         var filename = ele[i]["Name"]
-        var ext = (/[.]/.exec(filename)) ? /[^.]+$/.exec(filename) : [];
         tableData += "<tr class='bg-secondary text-white right_click'>\n"
         tableData += "<td class='fname' style='font-size: 150%; text-align: left;' >" + '<i class="far fa-folder"></i>' + '&ensp;<strong class="strong_title">' + filename + " </strong></td>\n"
         tableData += "<td> 資料夾 </td>\n"
@@ -277,7 +306,7 @@ function display_folder(ele) {
                                         <i class="fas fa-cloud-download-alt"></i> \
                                         <span>下載全部</span> \
                                     </a>'
-        tableData += '<a  href="/" class="btn btn-danger" style="center" \
+        tableData += '<a  href="/" class="btn btn-danger del_button" style="center" \
                         onclick="delFile('+ "'" + filename + "'" + ')"  > \
                         <i class="fas fa-trash"></i> \
                         <span>刪除</span> \
@@ -307,6 +336,9 @@ function reload_download_list() {
                 tableData += '<td colspan="4" class="align-middle">這個資料夾現在是空的喔</td>'
             }
             $("#tbody1").html(tableData);
+            if(all_files["permission"]=="visitor"){
+                $(".del_button").hide()
+            }
             $('.breadcrumb-item').remove();
             if (current_path.length == 0) {
                 $("#back_button").hide();
