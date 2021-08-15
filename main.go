@@ -107,6 +107,7 @@ func DownloadFile(ctx *gin.Context) {
 	f, err := os.Stat(targetPath)
 	if err != nil {
 		log.Fatal("Cannot find file error: ", err)
+		ctx.String(http.StatusInternalServerError, err.Error())
 		return
 	}
 	switch mode := f.Mode(); {
@@ -351,6 +352,7 @@ func Logout(ctx *gin.Context) {
 }
 
 func engine() *gin.Engine {
+	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
 	r.MaxMultipartMemory = 2 << 32
 	r.Static("/views", "./views")
@@ -384,6 +386,13 @@ func engine() *gin.Engine {
 func main() {
 	router := engine()
 	router.Use(gin.Logger())
+	log.Printf("將於 %s:5000 開啟伺服器", utils.GetOutboundIP())
+	if dir, err := os.Getwd(); err != nil {
+		os.Exit(1)
+		log.Fatal("工作目錄錯誤: ", err)
+	} else {
+		log.Println("檔案根目錄位於 ", dir+"\\"+ROOT_UPLOAD_PATH)
+	}
 	if err := engine().Run("0.0.0.0:5000"); err != nil {
 		log.Fatal("無法啟動伺服器", err)
 	}

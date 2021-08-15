@@ -329,6 +329,7 @@ function reload_download_list() {
         type: "GET",
         url: "/ls",
         success: function (all_files) {
+            permission=all_files["permission"]
             current_path = all_files["current_path"].replace("\\", "/")
             list_folders = all_files["folder"].map(f => f.Name)
             var tableData = display_file(all_files["file"]);
@@ -339,7 +340,6 @@ function reload_download_list() {
             $("#tbody1").html(tableData);
             if(all_files["permission"]=="visitor"){
                 $(".del_button").hide()
-                permission=all_files["permission"]
             }
             $('.breadcrumb-item').remove();
             if (current_path.length == 0) {
@@ -432,6 +432,7 @@ SELECT_ZONE = undefined
 
 //  add right click menu to table
 $("table").on("DOMSubtreeModified", function () {
+    console.log("permission is",permission)
     if(permission=="" || permission=="visitor"){
         return
     }

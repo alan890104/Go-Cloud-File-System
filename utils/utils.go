@@ -3,6 +3,8 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"log"
+	"net"
 	"runtime"
 	"syscall"
 	"unsafe"
@@ -61,4 +63,16 @@ func SpaceUsed(ds *DiskSpace) uint64 {
 
 func SpaceUsedPercent(ds *DiskSpace) float32 {
 	return float32(SpaceUsed(ds)) / float32(ds.TotalByte)
+}
+
+func GetOutboundIP() net.IP {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
+
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+
+	return localAddr.IP
 }
