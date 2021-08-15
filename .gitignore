@@ -1,2 +1,3 @@
 uploads/*
-*.exe
+bookkeeping.exe
+views\js\node_modules\*
