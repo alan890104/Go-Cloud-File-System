@@ -481,6 +481,7 @@ func engine() *gin.Engine {
 }
 
 func main() {
+	utils.InitConfig()
 	dbfunc.InitializeDB()
 	router := engine()
 	router.Use(gin.Logger())

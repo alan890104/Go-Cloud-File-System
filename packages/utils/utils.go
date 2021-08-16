@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"runtime"
 	"syscall"
 	"unsafe"
@@ -75,4 +76,17 @@ func GetOutboundIP() net.IP {
 	localAddr := conn.LocalAddr().(*net.UDPAddr)
 
 	return localAddr.IP
+}
+
+func create_Folder_If_Path_Not_Exist(path string) {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		os.Mkdir(path, os.ModePerm)
+	}
+}
+
+func InitConfig() {
+	essential_path := [...]string{"trash", "uploads"}
+	for _, path := range essential_path {
+		create_Folder_If_Path_Not_Exist(path)
+	}
 }
