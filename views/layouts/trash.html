@@ -57,13 +57,33 @@
                 <a class="btn border-light text-light col-2 mr-1" href="/">
                     <i class="fa fa-home" style="color: white;"></i>回到首頁
                 </a>
-                <a class="btn border-light text-light col-2" href="/logout">
+                <a class="btn border-light text-light col-2" id="logout_button" href="/login">
                     <i class="fa fa-sign-out-alt" style="color: white;"></i>登出
                 </a>
             </div>
         </nav>
     </div>
     <!-- NAV BAR END -->
+
+    <!-- TOAST -->
+    <div id="all_toast" class="position-fixed" style="position: relative; top: 10%; right: 0%;">
+        <!-- JQuery will append here -->
+    </div>
+    <!-- template -->
+    <div id="liveToast" class="toast hide" role="alert" aria-live="assertive" aria-atomic="true" data-autohide="false">
+        <div class="toast-header">
+            <i class="fas fa-exclamation-circle" style="color: red;"></i>
+            <strong class="mr-auto">錯誤</strong>
+            <small>剛剛</small>
+            <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        <div class="toast-body" id="error_msg">
+        </div>
+    </div>
+    <!-- TOAST END -->
+
     <div id="trash_block" style="background-color:whitesmoke; height: auto;">
         <div class="container">
             <h2 class="text-center mt-2">檢視回收桶</h2>
@@ -91,6 +111,7 @@
             </div>
         </div>
     </div>
+    <!-- TRASH END -->
 </body>
 
 </html>
@@ -245,7 +266,16 @@
             async: false,
             cache: false,
             timeout: 30000,
-            fail: function () {
+            error: function (xhr, status, tmp) {
+                if (xhr.responseText != undefined) {
+                    var $elem = $("#liveToast").clone()
+                    $elem.find("#error_msg").text(xhr.responseText)
+                    $elem.appendTo("#all_toast")
+                    $("#all_toast").find('.toast').toast('show');
+                    setTimeout(function () {
+                        $elem.remove();
+                    }, 2500);
+                }
                 return true;
             },
             success: function () {
@@ -258,7 +288,7 @@
         $.ajax({
             type: "POST",
             url: "/delete/" + filename,
-            data:{"mode":'delete'},
+            data: { "mode": 'delete' },
             async: false,
             cache: false,
             timeout: 30000,
@@ -287,7 +317,7 @@
                         <i class="fas fa-trash"></i> \
                         <span>永久刪除</span> \
                     </button>'
-            tableData += '<button   class="btn btn-warning" style="center" \
+            tableData += '<button   class="btn btn-warning recover_button" style="center" \
                 onclick="Recover('+ "'" + filename + "'" + ')"  > \
                 <i class="fas fa-undo-alt"></i> \
                 <span>還原</span> \
@@ -338,6 +368,14 @@
             }
         });
     }
+
+    $("#logout_button").on("click", function () {
+        $.ajax({
+            type: "POST",
+            url: "/logout",
+        });
+    })
+
 
     window.onload = function () {
         reload_trash_list()

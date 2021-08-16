@@ -27,6 +27,7 @@ type BasicFileInfo struct {
 
 /* ####################Configuration##########################*/
 
+var ADMIN_GUUID = "alankingdom"
 var TRASH_PATH string = "trash"               //Path of trash
 var ROOT_UPLOAD_PATH string = "uploads"       //cannot be changed
 var CUR_UPLOAD_PATH string = ROOT_UPLOAD_PATH //may update by user
@@ -184,6 +185,12 @@ func DeleteFile(ctx *gin.Context) {
 				log.Println("Error when delete file (delete mode)", err)
 				return
 			}
+			err = dbfunc.DeleteHistory(targetPath)
+			if err != nil {
+				log.Println("Error when delete history (delete mode)", err)
+				return
+			}
+
 		}
 	default:
 		{
@@ -256,11 +263,21 @@ func Recover(ctx *gin.Context) {
 	recoverPath, err := dbfunc.FindHistory(targetPath)
 	if err != nil {
 		log.Println("Error when Find History", err)
+		ctx.String(http.StatusBadRequest, "檔案歷史紀錄遺失，無法復原檔案")
+		return
 	}
-	fmt.Printf("Recovery %s to %s", targetPath, recoverPath)
+	fmt.Printf("Recovery %s to %s\n", targetPath, recoverPath)
 	err = os.Rename(targetPath, recoverPath)
 	if err != nil {
 		log.Println("Error when Recover Rename", err)
+		parent_folder_name := filepath.Base(filepath.Dir(recoverPath))
+		err_string := fmt.Sprintf("原始檔案的母目錄已經被刪除，無法復原。可以試著在回收桶中尋找名稱為%s的資料夾並將其還原。", parent_folder_name)
+		ctx.String(http.StatusBadRequest, err_string)
+		return
+	}
+	err = dbfunc.DeleteHistory(targetPath)
+	if err != nil {
+		log.Println("Error when delete history", err)
 	}
 }
 
@@ -304,7 +321,7 @@ func RenamePath(ctx *gin.Context) {
 		extension := filepath.Ext(f.Name())
 		parent := filepath.Dir(oldLocation)
 		newLocation := path.Join(parent, newname+extension)
-		log.Printf("The file name is %s and its extension is %s", parent, extension)
+		log.Printf("The file name is %s and its extension is %s\n", parent, extension)
 		err := os.Rename(oldLocation, newLocation)
 		if err != nil {
 			log.Println("Error when rename", err)
@@ -405,15 +422,16 @@ func Login(ctx *gin.Context) {
 	}
 	log.Println("Get guuid", guuid)
 	switch guuid {
-	case "alankingdom":
+	case ADMIN_GUUID:
 		session.Set("permission", "admin")
 	case "visitor":
 		session.Set("permission", "visitor")
 	default:
 		{
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"err": "無法識別的GUUID",
-			})
+			// ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			// 	"err": "無法識別的GUUID",
+			// })
+			ctx.String(http.StatusUnauthorized, "無法識別的GUUID")
 			log.Println("Get guuid", "無法識別的GUUID")
 			return
 		}
@@ -422,12 +440,21 @@ func Login(ctx *gin.Context) {
 		MaxAge: 3600 * 24, // 24hrs session
 	})
 	if err := session.Save(); err != nil {
-		session.Delete("permission")
+		session.Clear()
+		session.Options(sessions.Options{MaxAge: -1})
+		session.Save()
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"err": err.Error(),
 		})
 	}
 	ctx.Redirect(http.StatusFound, "/")
+}
+
+func GetSession(ctx *gin.Context) {
+	session := sessions.Default(ctx)
+	ctx.JSON(http.StatusOK, gin.H{
+		"permission": session.Get("permission"),
+	})
 }
 
 // Show Login Page
@@ -457,7 +484,7 @@ func engine() *gin.Engine {
 
 	r.POST("/login", Login)
 	r.GET("/login", Login_Render)
-	r.GET("/logout", Logout)
+	r.POST("/logout", Logout)
 
 	r.Use(AuthRequired)
 	{
@@ -476,6 +503,7 @@ func engine() *gin.Engine {
 		r.POST("/rename", RenamePath)
 		r.POST("/movetofolder", MoveToFolder)
 		r.GET("/freespace", FreeSpace)
+		r.GET("/session", GetSession)
 	}
 	return r
 }

@@ -70,3 +70,20 @@ func FindHistory(cur_path string) (string, error) {
 	}
 	return origin_path, nil
 }
+
+func DeleteHistory(cur_path string) error {
+	db, err := sql.Open("sqlite3", "./filehistory.db")
+	if err != nil {
+		return err
+	}
+	stmt, err := db.Prepare("DELETE FROM hist WHERE cur_path=?")
+	if err != nil {
+		return err
+	}
+	_, err = stmt.Exec(cur_path)
+	if err != nil {
+		return err
+	}
+	log.Printf("Succesfully delete %s FROM hist", cur_path)
+	return nil
+}

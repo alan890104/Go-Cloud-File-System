@@ -340,6 +340,7 @@ function reload_download_list() {
             $("#tbody1").html(tableData);
             if(all_files["permission"]=="visitor"){
                 $(".del_button").hide()
+                $("#trash_button").hide()
             }
             $('.breadcrumb-item').remove();
             if (current_path.length == 0) {

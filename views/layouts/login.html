@@ -325,7 +325,7 @@
     <div class="pos-f-t">
         <div class="collapse  show" id="navbarToggleExternalContent">
             <div class="bg-dark p-4">
-                <h2 class="text-white">檔案伺服器</h2>
+                <h2 class="text-white">個人檔案伺服器</h2>
                 <span class="text-muted">快速、輕鬆、便捷的管理雲端資料.</span>
             </div>
         </div>
@@ -350,13 +350,16 @@
             </div>
 
             <!-- Login Form -->
-            <form onsubmit="return logins()" method="POST" action="/login">
-                <input type="text" id="login_input" class="fadeIn second" name="guuid" placeholder="輸入由開發者提供的guuid"
+            <form id="login_input_form" action="/">
+                <input type="text" id="login_input" class="fadeIn second" name="guuid" placeholder="輸入由開發者提供的GUUID"
                     autocomplete="off" required>
                 <button type="button_form" class="fadeIn fourth">登入</button>
             </form>
+
+
             <!-- VISIT-->
             <div id="formFooter">
+                <p>沒有GUUID?</p>
                 <a id="vist" class="underlineHover" href="/">以訪客身分登入</a>
             </div>
 
@@ -369,10 +372,23 @@
 </html>
 
 <script>
-    $("#vist").on("click",function(){
+    $("#vist").on("click", function () {
         $.post(
-            url="/login",
-            data={"guuid":"visitor"},
+            url = "/login",
+            data = { "guuid": "visitor" },
         )
+    })
+
+    $("#login_input_form").submit(function () {
+        $.ajax({
+            method: "POST",
+            url: "/login",
+            async:false,
+            cache:false,
+            data: { "guuid": $("#login_input").val() },
+            error: function (xhr, status, tmp) {
+                alert(xhr.responseText)
+            }
+        })
     })
 </script>
