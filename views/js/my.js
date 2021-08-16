@@ -432,7 +432,7 @@ SELECT_ZONE = undefined
 
 //  add right click menu to table
 $("table").on("DOMSubtreeModified", function () {
-    console.log("permission is",permission)
+    // console.log("permission is",permission)
     if(permission=="" || permission=="visitor"){
         return
     }

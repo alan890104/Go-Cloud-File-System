@@ -1,0 +1,346 @@
+<!DOCTYPE HTML>
+<html lang="zh-TW">
+
+<head>
+    <title>個人檔案伺服器</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="description" content="NYCU dropzone">
+    <meta name="keywords" content="dropzone, NYCU, JavaScript">
+    <meta name="author" content="alankingdom">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <script src="views\js\node_modules\jquery\dist\jquery.min.js"></script>
+    <script src="views\js\node_modules\bootstrap\dist\js\bootstrap.min.js"></script>
+    <script src="views\js\node_modules\dropzone\dist\dropzone.js"></script>
+    <script src="views\js\node_modules\@fortawesome\fontawesome-free\js\all.js"></script>
+    <script src="https://code.iconify.design/2/2.0.3/iconify.min.js"></script>
+
+    <link rel="stylesheet" href="views\js\node_modules\bootstrap\dist\css\bootstrap.min.css">
+    <link rel="stylesheet" href="views\js\node_modules\dropzone\dist\dropzone.css">
+    <link rel="stylesheet" href="views\js\node_modules\@fortawesome\fontawesome-free\css\fontawesome.min.css">
+    <link rel="stylesheet" href="views\js\node_modules\@fortawesome\fontawesome-free\css\all.min.css">
+
+    <style>
+        th {
+            text-align: center;
+            vertical-align: middle;
+            font-size: large;
+        }
+
+        td {
+            text-align: center;
+            font-size: medium;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- NAV BAR START -->
+    <div class="pos-f-t">
+        <div class="collapse  show" id="navbarToggleExternalContent">
+            <div class="bg-dark p-4">
+                <!-- <div class="row"> -->
+                <h2 class="text-white">檔案伺服器</h2>
+
+                <!-- </div> -->
+                <span class="text-muted">快速、輕鬆、便捷的管理雲端資料.</span>
+            </div>
+        </div>
+
+        <nav class="navbar navbar-dark bg-dark">
+            <button class="navbar-toggler" type="button" data-toggle="collapse"
+                data-target="#navbarToggleExternalContent" aria-controls="navbarToggleExternalContent"
+                aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class=" col d-flex justify-content-end">
+                <a class="btn border-light text-light col-2 mr-1" href="/">
+                    <i class="fa fa-home" style="color: white;"></i>回到首頁
+                </a>
+                <a class="btn border-light text-light col-2" href="/logout">
+                    <i class="fa fa-sign-out-alt" style="color: white;"></i>登出
+                </a>
+            </div>
+        </nav>
+    </div>
+    <!-- NAV BAR END -->
+    <div id="trash_block" style="background-color:whitesmoke; height: auto;">
+        <div class="container">
+            <h2 class="text-center mt-2">檢視回收桶</h2>
+            <div class="row">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb" id="current_path_bread">
+                        <li>當前的位置是: &ensp; /trash</li>
+                    </ol>
+                </nav>
+
+                <div class="table-responsive">
+                    <table class="table border">
+                        <thead>
+                            <tr>
+                                <th>檔案名稱</th>
+                                <th>檔案大小</th>
+                                <th>刪除時間</th>
+                                <th>動作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody_trash">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
+
+<script>
+    function formatBytes(a, b = 2, k = 1024) { with (Math) { let d = floor(log(a) / log(k)); return 0 == a ? "0 Bytes" : parseFloat((a / pow(k, d)).toFixed(max(0, b))) + " " + ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"][d] } }
+
+
+    function getFileIcon(ext) {
+        if (ext.length == 0) {
+            return '<i class="far fa-file"></i>'
+        }
+        // <i class="fas fa-file-code"></i>
+        switch (ext[0].toLowerCase()) {
+            case 'txt':
+                return '<span class="iconify" data-icon="grommet-icons:document-txt"></span>'
+            case 'pdf':
+                return '<i class="far fa-file-pdf"></i>'
+            //word 
+            case 'docx':
+            case 'doc':
+                return '<span class="iconify" data-icon="vscode-icons:file-type-word2"></span>'
+            //excel
+            case 'xls':
+            case 'xlsx':
+            case 'xlsm':
+                return '<span class="iconify" data-icon="vscode-icons:file-type-excel2"></span>'
+            //csv
+            case 'csv':
+                return '<i class="fas fa-file-csv"></i>'
+            //tab
+            case 'tab':
+                return '<span class="iconify" data-icon="carbon:cross-tab"></span>'
+            //powerpoint
+            case 'ppt':
+            case 'pptx':
+                return '<span class="iconify" data-icon="vscode-icons:file-type-powerpoint2"></span>'
+            //image
+            case 'jpeg':
+            case 'jpg':
+            case 'png':
+            case 'svg':
+            case 'webp':
+            case 'bmp':
+            case 'gif':
+            case 'img':
+                return '<i class="fas fa-images"></i>'
+            //video
+            case 'avi':
+            case 'flv':
+            case 'wmv':
+            case 'mov':
+            case 'mp4':
+            case 'mpeg':
+            case 'heic':
+            case 'heif':
+            case 'hevc':
+                return '<i class="fas fa-video"></i>'
+            //music
+            case 'wav':
+            case 'flac':
+            case 'ape':
+            case 'alac':
+            case 'mp3':
+            case 'aac':
+            case 'wma':
+            case 'rmi':
+            case 'wv':
+                return '<i class="fas fa-music"></i>'
+            //git
+            case 'git':
+            case 'gitignore':
+                return '<span class="iconify" data-icon="fa-brands:git-alt"></span>'
+            //python 
+            case 'py':
+                return '<span class="iconify" data-icon="logos:python"></span>'
+            case 'ipynb':
+                return '<span class="iconify" data-icon="logos:jupyter"></span>'
+            //golang
+            case 'go':
+                return '<span class="iconify" data-icon="grommet-icons:golang"></span>'
+            //matlab
+            case 'm':
+            case 'mat':
+                return '<span class="iconify" data-icon="vscode-icons:file-type-matlab"></span>'
+            // c-like
+            case 'c':
+                return '<span class="iconify" data-icon="logos:c"></span>'
+            case 'cpp':
+                return '<span class="iconify" data-icon="logos:c-plusplus"></span>'
+
+            // Other languages
+            case 'pl':
+                return '<span class="iconify" data-icon="logos:perl"></span>'
+            case 'rb':
+                return '<span class="iconify" data-icon="logos:ruby"></span>'
+            case 'php':
+                return '<span class="iconify" data-icon="vscode-icons:file-type-php3"></span>'
+            case 'jsp':
+            case 'jspx':
+                return '<span class="iconify" data-icon="logos:java"></span>'
+            //js
+            case 'js':
+                return '<span class="iconify" data-icon="logos:javascript"></span>'
+            case 'json':
+                return '<span class="iconify" data-icon="vscode-icons:file-type-light-json"></span>'
+            //css 
+            case 'css':
+                return '<span class="iconify" data-icon="logos:css-3"></span>'
+            //html:
+            case 'html':
+            case 'htm':
+                return '<span class="iconify" data-icon="logos:html-5"></span>'
+            //xml
+            case 'xml':
+                return '<span class="iconify" data-icon="vscode-icons:file-type-xml"></span>'
+            //markdown:
+            case 'md':
+                return '<span class="iconify" data-icon="vscode-icons:file-type-markdown"></span>'
+            //zip
+            case 'zip':
+            case 'tar':
+            case 'gz':
+            case 'rar':
+            case '7z':
+                return '<i class="fas fa-file-archive"></i>'
+            //db
+            case 'db':
+            case 'sql':
+            case 'dat':
+                return '<span class="iconify" data-icon="vscode-icons:file-type-sql"></span>'
+            //bin
+            case 'exe':
+            case 'bat':
+            case 'dll':
+            case 'ini':
+                return '<span class="iconify" data-icon="vscode-icons:file-type-binary"></span>'
+            case 'ttf':
+                return '<span class="iconify" data-icon="ant-design:font-size-outlined"></span>'
+            case 'cer':
+                return '<span class="iconify" data-icon="vscode-icons:file-type-cert"></span>'
+            case 'apk':
+                return '<span class="iconify" data-icon="flat-color-icons:android-os"></span>'
+            default:
+                return '<i class="far fa-file"></i>'
+        }
+    }
+    function Recover(filename) {
+        $.ajax({
+            type: "POST",
+            url: "/recover/" + filename,
+            async: false,
+            cache: false,
+            timeout: 30000,
+            fail: function () {
+                return true;
+            },
+            success: function () {
+                reload_trash_list()
+            }
+        });
+    }
+
+    function delFile(filename) {
+        $.ajax({
+            type: "POST",
+            url: "/delete/" + filename,
+            data:{"mode":'delete'},
+            async: false,
+            cache: false,
+            timeout: 30000,
+            fail: function () {
+                return true;
+            },
+            success: function () {
+                reload_trash_list()
+            }
+        });
+    }
+
+    function display_file(ele) {
+        var tableData = ""
+        for (var i = 0; i < ele.length; i++) {
+            var create_time = new Date(ele[i]["Time"])
+            var filename = ele[i]["Name"]
+            var ext = (/[.]/.exec(filename)) ? /[^.]+$/.exec(filename) : [];
+            tableData += "<tr>\n"
+            tableData += "<td class='fname' style='font-size: 150%; text-align: left;'>" + getFileIcon(ext) + '&ensp;<strong class="strong_title">' + filename + " </strong></td>\n"
+            tableData += "<td>" + formatBytes(ele[i]["Size"]) + "</td>\n"
+            tableData += "<td> " + create_time.toISOString().substring(0, 19).replace('T', ' '); + " </td>\n"
+            new_url = 'downloads/' + filename
+            tableData += '<td><button  class="btn btn-danger del_button" style="center" \
+                        onclick="delFile('+ "'" + filename + "'" + ')"  > \
+                        <i class="fas fa-trash"></i> \
+                        <span>永久刪除</span> \
+                    </button>'
+            tableData += '<button   class="btn btn-warning" style="center" \
+                onclick="Recover('+ "'" + filename + "'" + ')"  > \
+                <i class="fas fa-undo-alt"></i> \
+                <span>還原</span> \
+            </button></td>\n'
+            tableData += "</tr>\n"
+        }
+        return tableData
+    }
+
+    function display_folder(ele) {
+        var tableData = ""
+        for (var i = 0; i < ele.length; i++) {
+            var create_time = new Date(ele[i]["Time"])
+            var filename = ele[i]["Name"]
+            tableData += "<tr class='bg-secondary text-white'>\n"
+            tableData += "<td class='fname' style='font-size: 150%; text-align: left;' >" + '<i class="far fa-folder"></i>' + '&ensp;<strong class="strong_title">' + filename + " </strong></td>\n"
+            tableData += "<td> 資料夾 </td>\n"
+            tableData += "<td> " + create_time.toISOString().substring(0, 19).replace('T', ' '); + " </td>\n"
+            new_url = 'downloads/' + filename
+            tableData += '<td><button  class="btn btn-danger del_button" style="center" \
+                        onclick="delFile('+ "'" + filename + "'" + ')"  > \
+                        <i class="fas fa-trash"></i> \
+                        <span>永久刪除</span> \
+                    </button>'
+            tableData += '<button   class="btn btn-warning" style="center" \
+                onclick="Recover('+ "'" + filename + "'" + ')"  > \
+                <i class="fas fa-undo-alt"></i> \
+                <span>還原</span> \
+            </button></td>\n'
+            tableData += "</tr>\n"
+        }
+        return tableData
+    }
+
+    list_folders = []
+    function reload_trash_list() {
+        $.ajax({
+            type: "POST",
+            url: "/trash/list",
+            success: function (all_files) {
+                list_folders = all_files["folder"].map(f => f.Name)
+                var tableData = display_file(all_files["file"]);
+                tableData += display_folder(all_files["folder"]);
+                if (all_files["file"].length == 0 && all_files["folder"].length == 0) {
+                    tableData += '<td colspan="4" class="align-middle">回收桶中沒有任何資料夾或檔案</td>'
+                }
+                $("#tbody_trash").html(tableData);
+            }
+        });
+    }
+
+    window.onload = function () {
+        reload_trash_list()
+    }
+
+</script>

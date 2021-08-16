@@ -2,7 +2,8 @@ package main
 
 import (
 	"archive/zip"
-	"bookkeeping/utils"
+	"bookkeeping/packages/dbfunc"
+	"bookkeeping/packages/utils"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -18,14 +19,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var ROOT_UPLOAD_PATH string = "uploads"       //cannot be changed
-var CUR_UPLOAD_PATH string = ROOT_UPLOAD_PATH //may update by user
-
 type BasicFileInfo struct {
 	Name string `json:"Name"`
 	Size int64  `json:"Size"`
 	Time string `json:"Time"`
 }
+
+/* ####################Configuration##########################*/
+
+var TRASH_PATH string = "trash"               //Path of trash
+var ROOT_UPLOAD_PATH string = "uploads"       //cannot be changed
+var CUR_UPLOAD_PATH string = ROOT_UPLOAD_PATH //may update by user
+
+/* ####################Configuration##########################*/
 
 // goto folder by absolute path
 func Go_abs_Path(ctx *gin.Context) {
@@ -106,7 +112,7 @@ func DownloadFile(ctx *gin.Context) {
 	log.Println("DownloadFile@", targetPath)
 	f, err := os.Stat(targetPath)
 	if err != nil {
-		log.Fatal("Cannot find file error: ", err)
+		log.Println("Cannot find file error: ", err)
 		ctx.String(http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -157,19 +163,105 @@ func DownloadFile(ctx *gin.Context) {
 	}
 }
 
+// Not acutally delete file, move the file to trash instead
 func DeleteFile(ctx *gin.Context) {
-	filename := ctx.Param("filename")
-	targetPath := filepath.Join(CUR_UPLOAD_PATH, filename)
-	err := os.RemoveAll(targetPath)
-	if err != nil {
+	session := sessions.Default(ctx)
+	if permission := session.Get("permission"); permission != "admin" {
 		ctx.JSON(http.StatusBadRequest, gin.H{
-			"error": err,
+			"err": "No permission",
 		})
 		return
+	}
+	filename := ctx.Param("filename")
+	mode := ctx.PostForm("mode")
+	switch mode {
+	case "delete":
+		{
+			targetPath := filepath.Join(TRASH_PATH, filename)
+			log.Printf("Delete file mode: delete, path:%s", targetPath)
+			err := os.RemoveAll(targetPath)
+			if err != nil {
+				log.Println("Error when delete file (delete mode)", err)
+				return
+			}
+		}
+	default:
+		{
+			targetPath := filepath.Join(CUR_UPLOAD_PATH, filename)
+			log.Printf("Delete file mode: trash, path:%s, parent: %s", targetPath, filepath.Dir(targetPath))
+			newPath := path.Join(TRASH_PATH, filename)
+			err := os.Rename(targetPath, newPath)
+			if err != nil {
+				log.Println("Error when delete file (trash mode)", err)
+				return
+			}
+			dbfunc.InsertHistory(targetPath, newPath)
+		}
 	}
 	ctx.JSON(http.StatusOK, gin.H{
 		"info": "Success",
 	})
+}
+
+func TrashFilesRender(ctx *gin.Context) {
+	session := sessions.Default(ctx)
+	if session.Get("permission") != "admin" {
+		log.Println("No permission to access ListTrash")
+		ctx.Redirect(http.StatusPermanentRedirect, "/")
+		ctx.AbortWithStatus(http.StatusPermanentRedirect)
+		return
+	}
+	ctx.HTML(http.StatusOK, "trash.html", nil)
+}
+
+func ListTrash(ctx *gin.Context) {
+	session := sessions.Default(ctx)
+	data := []BasicFileInfo{}
+	folder := []BasicFileInfo{}
+	if session.Get("permission") != "admin" {
+		log.Println("No permission to access ListTrash")
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"err": "No permission to access ListTrash",
+		})
+		return
+	}
+	files, err := ioutil.ReadDir(TRASH_PATH)
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].ModTime().After(files[j].ModTime())
+	})
+	if err != nil {
+		ctx.String(http.StatusBadRequest, err.Error())
+		return
+	}
+	for _, f := range files {
+		tmp := BasicFileInfo{
+			Name: f.Name(),
+			Size: f.Size(),
+			Time: f.ModTime().Local().String()}
+		if f.IsDir() {
+			folder = append(folder, tmp)
+		} else {
+			data = append(data, tmp)
+		}
+	}
+	ctx.JSON(http.StatusOK, gin.H{
+		"file":   data,
+		"folder": folder,
+	})
+}
+
+func Recover(ctx *gin.Context) {
+	filename := ctx.Param("filename")
+	targetPath := path.Join(TRASH_PATH, filename)
+	recoverPath, err := dbfunc.FindHistory(targetPath)
+	if err != nil {
+		log.Println("Error when Find History", err)
+	}
+	fmt.Printf("Recovery %s to %s", targetPath, recoverPath)
+	err = os.Rename(targetPath, recoverPath)
+	if err != nil {
+		log.Println("Error when Recover Rename", err)
+	}
 }
 
 func CreateFolder(ctx *gin.Context) {
@@ -178,7 +270,7 @@ func CreateFolder(ctx *gin.Context) {
 	if _, err := os.Stat(targetPath); os.IsNotExist(err) {
 		err := os.MkdirAll(targetPath, os.ModePerm)
 		if err != nil {
-			log.Fatal("There is error", err)
+			log.Println("There is error", err)
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": err,
 			})
@@ -194,7 +286,7 @@ func RenamePath(ctx *gin.Context) {
 	oldLocation := path.Join(CUR_UPLOAD_PATH, oldname)
 	f, err := os.Stat(oldLocation)
 	if err != nil {
-		log.Fatal("Err on filename ", oldLocation, err, newname)
+		log.Println("Err on filename ", oldLocation, err, newname)
 		ctx.String(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -204,7 +296,7 @@ func RenamePath(ctx *gin.Context) {
 		newLocation := path.Join(parent, newname)
 		err := os.Rename(oldLocation, newLocation)
 		if err != nil {
-			log.Fatal("Error when rename", err)
+			log.Println("Error when rename", err)
 			ctx.String(http.StatusBadRequest, err.Error())
 		}
 		return
@@ -215,7 +307,7 @@ func RenamePath(ctx *gin.Context) {
 		log.Printf("The file name is %s and its extension is %s", parent, extension)
 		err := os.Rename(oldLocation, newLocation)
 		if err != nil {
-			log.Fatal("Error when rename", err)
+			log.Println("Error when rename", err)
 			ctx.String(http.StatusBadRequest, err.Error())
 		}
 		return
@@ -240,7 +332,7 @@ func MoveToFolder(ctx *gin.Context) {
 	folderLocation := path.Join(CUR_UPLOAD_PATH, foldername)
 	f, err := os.Stat(fileLocation)
 	if err != nil {
-		log.Fatal("Err on filename ", fileLocation, err)
+		log.Println("Err on filename ", fileLocation, err)
 		ctx.String(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -255,13 +347,13 @@ func MoveToFolder(ctx *gin.Context) {
 		{
 			_, err = os.Stat(folderLocation)
 			if err != nil {
-				log.Fatal("Err on foldername ", folderLocation, err)
+				log.Println("Err on foldername ", folderLocation, err)
 				return
 			}
 			newLocation := path.Join(folderLocation, filename)
 			err = os.Rename(fileLocation, newLocation)
 			if err != nil {
-				log.Fatal("Error when rename", err)
+				log.Println("Error when rename", err)
 				ctx.String(http.StatusBadRequest, err.Error())
 			}
 		}
@@ -272,12 +364,12 @@ func MoveToFolder(ctx *gin.Context) {
 func FreeSpace(ctx *gin.Context) {
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
-		log.Fatal("Error on os.Getwd", err)
+		log.Println("Error on os.Getwd", err)
 		ctx.String(http.StatusInternalServerError, err.Error())
 	}
 	ds, err := utils.Disk_Space(dir)
 	if err != nil {
-		log.Fatal("Error on Disk_Space", err)
+		log.Println("Error on Disk_Space", err)
 		ctx.String(http.StatusInternalServerError, err.Error())
 	}
 	usedpercent := fmt.Sprintf("%.3f%%", utils.SpaceUsedPercent(ds)*100)
@@ -348,6 +440,7 @@ func Logout(ctx *gin.Context) {
 	session.Clear()
 	session.Options(sessions.Options{MaxAge: -1})
 	session.Save()
+	log.Println("User logout.")
 	ctx.Redirect(http.StatusMovedPermanently, "/login")
 }
 
@@ -360,9 +453,11 @@ func engine() *gin.Engine {
 
 	store := sessions.NewCookieStore([]byte("secret"))
 	r.Use(sessions.Sessions("mysession", store))
+	// r.Use(gin.Logger()) //Show detail of requests
 
 	r.POST("/login", Login)
 	r.GET("/login", Login_Render)
+	r.GET("/logout", Logout)
 
 	r.Use(AuthRequired)
 	{
@@ -374,16 +469,19 @@ func engine() *gin.Engine {
 		r.GET("/ls", ListFile)
 		r.GET("downloads/:filename", DownloadFile)
 		r.POST("/delete/:filename", DeleteFile)
+		r.GET("/trash", TrashFilesRender)
+		r.POST("/trash/list", ListTrash)
+		r.POST("recover/:filename", Recover)
 		r.GET("/create/:foldername", CreateFolder)
 		r.POST("/rename", RenamePath)
 		r.POST("/movetofolder", MoveToFolder)
 		r.GET("/freespace", FreeSpace)
-		r.GET("/logout", Logout)
 	}
 	return r
 }
 
 func main() {
+	dbfunc.InitializeDB()
 	router := engine()
 	router.Use(gin.Logger())
 	log.Printf("將於 %s:5000 開啟伺服器", utils.GetOutboundIP())

@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<html lang="en">
+<html lang="zh-TW">
 
 <head>
     <title>個人檔案伺服器</title>
@@ -65,32 +65,36 @@
             display: block;
         }
     </style>
-
 </head>
 
-<body>
 
+<body>
     <!-- NAV BAR START -->
     <div class="pos-f-t">
         <div class="collapse  show" id="navbarToggleExternalContent">
             <div class="bg-dark p-4">
                 <!-- <div class="row"> -->
-                    <h2 class="text-white">檔案伺服器</h2>
-                    
+                <h2 class="text-white">檔案伺服器</h2>
+
                 <!-- </div> -->
                 <span class="text-muted">快速、輕鬆、便捷的管理雲端資料.</span>
             </div>
         </div>
-        
+
         <nav class="navbar navbar-dark bg-dark">
             <button class="navbar-toggler" type="button" data-toggle="collapse"
                 data-target="#navbarToggleExternalContent" aria-controls="navbarToggleExternalContent"
                 aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <a class="btn border-light text-light col-2" href="/logout">
-                <i class="fa fa-sign-out-alt" style="color: white;"></i>登出
-            </a>
+            <div class=" col d-flex justify-content-end">
+                <a class="btn border-light text-light col-2 mr-1" href="/trash">
+                    <i class="fa fa-trash" style="color: white;"></i>檢視回收桶
+                </a>
+                <a class="btn border-light text-light col-2" href="/logout">
+                    <i class="fa fa-sign-out-alt" style="color: white;"></i>登出
+                </a>
+            </div>
         </nav>
     </div>
     <!-- NAV BAR END -->
