@@ -92,6 +92,7 @@ func create_Folder_If_Path_Not_Exist(path string) {
 
 func create_default_config() {
 	if _, err := os.Stat("config.json"); os.IsNotExist(err) {
+		log.Println("未找到config.json，將以預設值創建。")
 		config := Configuration{
 			ADMIN_GUUID: "administrator",
 		}
@@ -103,6 +104,8 @@ func create_default_config() {
 		if err != nil {
 			log.Fatal("Error when write default config.json", err)
 		}
+	} else {
+		log.Println("成功加載config.json")
 	}
 }
 

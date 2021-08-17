@@ -28,7 +28,6 @@ type BasicFileInfo struct {
 /* ####################Configuration##########################*/
 
 var Config = utils.InitConfig()
-var ADMIN_GUUID = Config.ADMIN_GUUID
 var TRASH_PATH string = "trash"         //Path of trash
 var ROOT_UPLOAD_PATH string = "uploads" //cannot be changed
 
@@ -454,7 +453,7 @@ func Login(ctx *gin.Context) {
 	}
 	log.Println("Get guuid", guuid)
 	switch guuid {
-	case ADMIN_GUUID:
+	case Config.ADMIN_GUUID:
 		session.Set("permission", "admin")
 	case "visitor":
 		session.Set("permission", "visitor")
@@ -542,7 +541,6 @@ func engine() *gin.Engine {
 }
 
 func main() {
-	utils.InitConfig()
 	dbfunc.InitializeDB()
 	router := engine()
 	router.Use(gin.Logger())
