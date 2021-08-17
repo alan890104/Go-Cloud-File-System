@@ -146,6 +146,7 @@ function getFileIcon(ext) {
         case 'heic':
         case 'heif':
         case 'hevc':
+        case 'mts':
             return '<i class="fas fa-video"></i>'
         //music
         case 'wav':

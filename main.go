@@ -48,7 +48,7 @@ func Set_CUR_UPLOAD_PATH(ctx *gin.Context, newpath string) {
 	session := sessions.Default(ctx)
 	session.Set("CUR_UPLOAD_PATH", newpath)
 	session.Options(sessions.Options{
-		MaxAge: 3600 * 24, // 24hrs session
+		MaxAge: 0,
 	})
 	session.Save()
 }
@@ -469,7 +469,7 @@ func Login(ctx *gin.Context) {
 	}
 	session.Set("CUR_UPLOAD_PATH", ROOT_UPLOAD_PATH) // personal path
 	session.Options(sessions.Options{
-		MaxAge: 3600 * 24, // 24hrs session
+		MaxAge: 0,
 	})
 	if err := session.Save(); err != nil {
 		session.Clear()
