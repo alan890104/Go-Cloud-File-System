@@ -1,8 +1,10 @@
 package utils
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -14,6 +16,10 @@ import (
 type DiskSpace struct {
 	FreeByte  uint64 `json:"free"`
 	TotalByte uint64 `json:"total"`
+}
+
+type Configuration struct {
+	ADMIN_GUUID string `json:"ADMIN_GUUID"`
 }
 
 func Disk_Space(path string) (*DiskSpace, error) {
@@ -84,9 +90,37 @@ func create_Folder_If_Path_Not_Exist(path string) {
 	}
 }
 
-func InitConfig() {
+func create_default_config() {
+	if _, err := os.Stat("config.json"); os.IsNotExist(err) {
+		config := Configuration{
+			ADMIN_GUUID: "administrator",
+		}
+		file, err := json.MarshalIndent(config, "", " ")
+		if err != nil {
+			log.Fatal("Error when MarshalIndent ", err)
+		}
+		err = ioutil.WriteFile("config.json", file, 0644)
+		if err != nil {
+			log.Fatal("Error when write default config.json", err)
+		}
+	}
+}
+
+// Use when loading global var
+func InitConfig() Configuration {
+	create_default_config()
+	file, err := os.ReadFile("config.json")
+	if err != nil {
+		log.Fatal("Error when load config.json", err)
+	}
+	config := Configuration{}
+	err = json.Unmarshal([]byte(file), &config)
+	if err != nil {
+		log.Fatal("Error when Unmarshal", err)
+	}
 	essential_path := [...]string{"trash", "uploads"}
 	for _, path := range essential_path {
 		create_Folder_If_Path_Not_Exist(path)
 	}
+	return config
 }

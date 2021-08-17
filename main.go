@@ -27,10 +27,10 @@ type BasicFileInfo struct {
 
 /* ####################Configuration##########################*/
 
-var ADMIN_GUUID = "alankingdom"
+var Config = utils.InitConfig()
+var ADMIN_GUUID = Config.ADMIN_GUUID
 var TRASH_PATH string = "trash"         //Path of trash
 var ROOT_UPLOAD_PATH string = "uploads" //cannot be changed
-// var CUR_UPLOAD_PATH string = ROOT_UPLOAD_PATH //may update by user
 
 /* ####################Configuration##########################*/
 
