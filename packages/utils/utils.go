@@ -20,6 +20,7 @@ type DiskSpace struct {
 
 type Configuration struct {
 	ADMIN_GUUID string `json:"ADMIN_GUUID"`
+	EMAIL       string `json:"EMAIL"`
 }
 
 func Disk_Space(path string) (*DiskSpace, error) {
@@ -95,6 +96,7 @@ func create_default_config() {
 		log.Println("未找到config.json，將以預設值創建。")
 		config := Configuration{
 			ADMIN_GUUID: "administrator",
+			EMAIL:       "administrator@mail",
 		}
 		file, err := json.MarshalIndent(config, "", " ")
 		if err != nil {

@@ -359,8 +359,8 @@
             url: "/trash/list",
             success: function (all_files) {
                 list_folders = all_files["folder"].map(f => f.Name)
-                var tableData = display_file(all_files["file"]);
-                tableData += display_folder(all_files["folder"]);
+                var tableData = display_folder(all_files["folder"]);
+                tableData += display_file(all_files["file"]);
                 if (all_files["file"].length == 0 && all_files["folder"].length == 0) {
                     tableData += '<td colspan="4" class="align-middle">回收桶中沒有任何資料夾或檔案</td>'
                 }

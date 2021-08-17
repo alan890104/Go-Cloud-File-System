@@ -332,8 +332,8 @@ function reload_download_list() {
             permission=all_files["permission"]
             current_path = all_files["current_path"].replace("\\", "/")
             list_folders = all_files["folder"].map(f => f.Name)
-            var tableData = display_file(all_files["file"]);
-            tableData += display_folder(all_files["folder"]);
+            var tableData = display_folder(all_files["folder"]);
+            tableData += display_file(all_files["file"]);
             if (all_files["file"].length == 0 && all_files["folder"].length == 0) {
                 tableData += '<td colspan="4" class="align-middle">這個資料夾現在是空的喔</td>'
             }
