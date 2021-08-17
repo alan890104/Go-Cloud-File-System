@@ -3,4 +3,4 @@ trash/*
 *.exe
 views\js\node_modules\*
 idea.txt
-*.db
+filehistory.db

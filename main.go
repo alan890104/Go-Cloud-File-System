@@ -28,32 +28,57 @@ type BasicFileInfo struct {
 /* ####################Configuration##########################*/
 
 var ADMIN_GUUID = "alankingdom"
-var TRASH_PATH string = "trash"               //Path of trash
-var ROOT_UPLOAD_PATH string = "uploads"       //cannot be changed
-var CUR_UPLOAD_PATH string = ROOT_UPLOAD_PATH //may update by user
+var TRASH_PATH string = "trash"         //Path of trash
+var ROOT_UPLOAD_PATH string = "uploads" //cannot be changed
+// var CUR_UPLOAD_PATH string = ROOT_UPLOAD_PATH //may update by user
 
 /* ####################Configuration##########################*/
+
+// This is not a route. Return "" if no CUR_UPLOAD_PATH in session
+func Load_CUR_UPLOAD_PATH(ctx *gin.Context) string {
+	session := sessions.Default(ctx)
+	v := session.Get("CUR_UPLOAD_PATH")
+	if v == nil {
+		return ""
+	}
+	return v.(string)
+}
+
+// This is not a route
+func Set_CUR_UPLOAD_PATH(ctx *gin.Context, newpath string) {
+	session := sessions.Default(ctx)
+	session.Set("CUR_UPLOAD_PATH", newpath)
+	session.Options(sessions.Options{
+		MaxAge: 3600 * 24, // 24hrs session
+	})
+	session.Save()
+}
 
 // goto folder by absolute path
 func Go_abs_Path(ctx *gin.Context) {
 	pathname := ctx.PostForm("pathname")
-	CUR_UPLOAD_PATH = path.Join(ROOT_UPLOAD_PATH, pathname)
+	CUR_UPLOAD_PATH := path.Join(ROOT_UPLOAD_PATH, pathname)
+	Set_CUR_UPLOAD_PATH(ctx, CUR_UPLOAD_PATH)
 	fmt.Println("Goto abs path", CUR_UPLOAD_PATH)
 }
 
 // goto subfolder
 func Go_To_Path(ctx *gin.Context) {
 	subfolder := ctx.PostForm("subfolder")
+	CUR_UPLOAD_PATH := Load_CUR_UPLOAD_PATH(ctx)
 	CUR_UPLOAD_PATH = path.Join(CUR_UPLOAD_PATH, subfolder)
+	Set_CUR_UPLOAD_PATH(ctx, CUR_UPLOAD_PATH)
 	fmt.Println("Goto subfolder ", CUR_UPLOAD_PATH)
 }
 
 func Go_Back(ctx *gin.Context) {
+	CUR_UPLOAD_PATH := Load_CUR_UPLOAD_PATH(ctx)
 	if CUR_UPLOAD_PATH == ROOT_UPLOAD_PATH {
 		return
 	}
 	CUR_UPLOAD_PATH = filepath.Dir(CUR_UPLOAD_PATH)
 	CUR_UPLOAD_PATH = strings.ReplaceAll(CUR_UPLOAD_PATH, "\\", "/")
+	Set_CUR_UPLOAD_PATH(ctx, CUR_UPLOAD_PATH)
 	fmt.Println("Back to parent folder", CUR_UPLOAD_PATH)
 }
 
@@ -65,6 +90,7 @@ func UploadFile(ctx *gin.Context) {
 		})
 		return
 	}
+	CUR_UPLOAD_PATH := Load_CUR_UPLOAD_PATH(ctx)
 	err = ctx.SaveUploadedFile(file, filepath.Join(CUR_UPLOAD_PATH, file.Filename))
 	if err != nil {
 		ctx.String(http.StatusBadRequest, err.Error())
@@ -75,6 +101,7 @@ func UploadFile(ctx *gin.Context) {
 }
 
 func ListFile(ctx *gin.Context) {
+	CUR_UPLOAD_PATH := Load_CUR_UPLOAD_PATH(ctx)
 	files, err := ioutil.ReadDir(CUR_UPLOAD_PATH)
 	// fmt.Println("Files are", files)
 	sort.Slice(files, func(i, j int) bool {
@@ -109,6 +136,7 @@ func ListFile(ctx *gin.Context) {
 
 func DownloadFile(ctx *gin.Context) {
 	filename := ctx.Param("filename")
+	CUR_UPLOAD_PATH := Load_CUR_UPLOAD_PATH(ctx)
 	targetPath := filepath.Join(CUR_UPLOAD_PATH, filename)
 	log.Println("DownloadFile@", targetPath)
 	f, err := os.Stat(targetPath)
@@ -194,6 +222,7 @@ func DeleteFile(ctx *gin.Context) {
 		}
 	default:
 		{
+			CUR_UPLOAD_PATH := Load_CUR_UPLOAD_PATH(ctx)
 			targetPath := filepath.Join(CUR_UPLOAD_PATH, filename)
 			log.Printf("Delete file mode: trash, path:%s, parent: %s", targetPath, filepath.Dir(targetPath))
 			newPath := path.Join(TRASH_PATH, filename)
@@ -215,7 +244,7 @@ func TrashFilesRender(ctx *gin.Context) {
 	if session.Get("permission") != "admin" {
 		log.Println("No permission to access ListTrash")
 		ctx.Redirect(http.StatusPermanentRedirect, "/")
-		ctx.AbortWithStatus(http.StatusPermanentRedirect)
+		// ctx.AbortWithStatus(http.StatusPermanentRedirect)
 		return
 	}
 	ctx.HTML(http.StatusOK, "trash.html", nil)
@@ -283,6 +312,7 @@ func Recover(ctx *gin.Context) {
 
 func CreateFolder(ctx *gin.Context) {
 	dir_name := ctx.Param("foldername")
+	CUR_UPLOAD_PATH := Load_CUR_UPLOAD_PATH(ctx)
 	targetPath := filepath.Join(CUR_UPLOAD_PATH, dir_name)
 	if _, err := os.Stat(targetPath); os.IsNotExist(err) {
 		err := os.MkdirAll(targetPath, os.ModePerm)
@@ -300,6 +330,7 @@ func CreateFolder(ctx *gin.Context) {
 func RenamePath(ctx *gin.Context) {
 	oldname := ctx.PostForm("oldname")
 	newname := ctx.PostForm("newname")
+	CUR_UPLOAD_PATH := Load_CUR_UPLOAD_PATH(ctx)
 	oldLocation := path.Join(CUR_UPLOAD_PATH, oldname)
 	f, err := os.Stat(oldLocation)
 	if err != nil {
@@ -334,6 +365,7 @@ func RenamePath(ctx *gin.Context) {
 func MoveToFolder(ctx *gin.Context) {
 	filename := ctx.PostForm("filename")
 	foldername := ctx.PostForm("foldername")
+	CUR_UPLOAD_PATH := Load_CUR_UPLOAD_PATH(ctx)
 	fileLocation := path.Join(CUR_UPLOAD_PATH, filename)
 	if foldername == "$-parent-$" {
 		if CUR_UPLOAD_PATH == ROOT_UPLOAD_PATH {
@@ -436,6 +468,7 @@ func Login(ctx *gin.Context) {
 			return
 		}
 	}
+	session.Set("CUR_UPLOAD_PATH", ROOT_UPLOAD_PATH) // personal path
 	session.Options(sessions.Options{
 		MaxAge: 3600 * 24, // 24hrs session
 	})
@@ -515,8 +548,8 @@ func main() {
 	router.Use(gin.Logger())
 	log.Printf("將於 %s:5000 開啟伺服器", utils.GetOutboundIP())
 	if dir, err := os.Getwd(); err != nil {
-		os.Exit(1)
 		log.Fatal("工作目錄錯誤: ", err)
+		os.Exit(1)
 	} else {
 		log.Println("檔案根目錄位於 ", dir+"\\"+ROOT_UPLOAD_PATH)
 	}

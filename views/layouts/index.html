@@ -88,9 +88,9 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class=" col d-flex justify-content-end">
-                <a class="btn border-light text-light col-2 mr-1" href="/trash" id="trash_button">
+                <button class="btn border-light text-light col-2 mr-1" id="trash_button">
                     <i class="fa fa-trash" style="color: white;"></i>檢視回收桶
-                </a>
+                </button>
                 <a class="btn border-light text-light col-2" id="logout_button" href="/login">
                     <i class="fa fa-sign-out-alt" style="color: white;"></i>登出
                 </a>
@@ -269,6 +269,17 @@
         $.ajax({
             type: "POST",
             url: "/logout",
+            async:false,
+            cache:false,
         });
+    })
+    $("#trash_button").on("click",function(){
+        $.ajax({
+            type:"GET",
+            url:"/trash",
+            success:function(){
+                window.location.href = "/trash"
+            }
+        })
     })
 </script>
