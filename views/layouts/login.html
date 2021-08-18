@@ -373,10 +373,13 @@
 
 <script>
     $("#vist").on("click", function () {
-        $.post(
-            url = "/login",
-            data = { "guuid": "visitor" },
-        )
+        $.ajax({
+            method:"POST",
+            url : "/login",
+            async:false,
+            cache:false,
+            data : { "guuid": "visitor" },
+        })
     })
 
     $("#login_input_form").submit(function () {
@@ -387,7 +390,9 @@
             cache:false,
             data: { "guuid": $("#login_input").val() },
             error: function (xhr, status, tmp) {
-                alert(xhr.responseText)
+                if (xhr.status==401){
+                    alert(xhr.responseText)
+                }
             }
         })
     })

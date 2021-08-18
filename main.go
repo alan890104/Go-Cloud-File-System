@@ -448,6 +448,7 @@ func Login(ctx *gin.Context) {
 	session := sessions.Default(ctx)
 	guuid := ctx.PostForm("guuid")
 	if guuid == "" {
+		log.Println("Found guuid empty, redirect to /login")
 		ctx.Redirect(http.StatusFound, "/login")
 		return
 	}
@@ -471,6 +472,7 @@ func Login(ctx *gin.Context) {
 	session.Options(sessions.Options{
 		MaxAge: 0,
 	})
+	session.Save()
 	if err := session.Save(); err != nil {
 		session.Clear()
 		session.Options(sessions.Options{MaxAge: -1})
@@ -479,7 +481,7 @@ func Login(ctx *gin.Context) {
 			"err": err.Error(),
 		})
 	}
-	ctx.Redirect(http.StatusFound, "/")
+	ctx.Redirect(http.StatusTemporaryRedirect, "/")
 }
 
 func GetSession(ctx *gin.Context) {

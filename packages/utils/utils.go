@@ -21,6 +21,7 @@ type DiskSpace struct {
 type Configuration struct {
 	ADMIN_GUUID string `json:"ADMIN_GUUID"`
 	EMAIL       string `json:"EMAIL"`
+	EMAIL_TOKEN string `json:"EMAIL_TOKEN"`
 }
 
 func Disk_Space(path string) (*DiskSpace, error) {
@@ -97,6 +98,7 @@ func create_default_config() {
 		config := Configuration{
 			ADMIN_GUUID: "administrator",
 			EMAIL:       "administrator@mail",
+			EMAIL_TOKEN: "administrator",
 		}
 		file, err := json.MarshalIndent(config, "", " ")
 		if err != nil {
