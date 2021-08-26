@@ -2,18 +2,22 @@ package main
 
 import (
 	"archive/zip"
-	"bookkeeping/packages/dbfunc"
-	"bookkeeping/packages/utils"
+	"context"
+	"fileserver/packages/dbfunc"
+	"fileserver/packages/utils"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"path"
 	"path/filepath"
 	"sort"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -543,17 +547,42 @@ func engine() *gin.Engine {
 }
 
 func main() {
+	log.Println("您的GUUID為", Config.ADMIN_GUUID)
 	dbfunc.InitializeDB()
 	router := engine()
 	router.Use(gin.Logger())
-	log.Printf("將於 %s:5000 開啟伺服器", utils.GetOutboundIP())
+	log.Printf("將於 http://%s:5000 開啟伺服器", utils.GetOutboundIP())
 	if dir, err := os.Getwd(); err != nil {
 		log.Fatal("工作目錄錯誤: ", err)
 		os.Exit(1)
 	} else {
 		log.Println("檔案根目錄位於 ", dir+"\\"+ROOT_UPLOAD_PATH)
 	}
-	if err := engine().Run("0.0.0.0:5000"); err != nil {
-		log.Fatal("無法啟動伺服器", err)
+	/* Use graceful shutdown */
+	srv := &http.Server{
+		Addr:    ":5000",
+		Handler: router,
 	}
+	// Create channel
+	ch := make(chan os.Signal, 1)
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Println("無法啟動伺服器", err)
+		}
+	}()
+	// Notify: Send system signal to channel
+	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
+	// block channel
+	<-ch
+	log.Println("關閉伺服器-緩衝時間3秒")
+	ctx := context.Background()
+	c, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(c); err != nil {
+		log.Println("強制關閉伺服器時發生錯誤", err)
+	}
+	// close channel
+	<-c.Done()
+	close(ch)
+	log.Println("已經完全關閉伺服器")
 }
