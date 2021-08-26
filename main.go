@@ -221,7 +221,6 @@ func DeleteFile(ctx *gin.Context) {
 				log.Println("Error when delete history (delete mode)", err)
 				return
 			}
-
 		}
 	default:
 		{
@@ -574,9 +573,9 @@ func main() {
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	// block channel
 	<-ch
-	log.Println("關閉伺服器-緩衝時間3秒")
+	log.Println("關閉伺服器-緩衝時間1秒")
 	ctx := context.Background()
-	c, cancel := context.WithTimeout(ctx, 3*time.Second)
+	c, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 	if err := srv.Shutdown(c); err != nil {
 		log.Println("強制關閉伺服器時發生錯誤", err)

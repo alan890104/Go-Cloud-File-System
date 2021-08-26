@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"os"
+	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -72,6 +73,7 @@ func FindHistory(cur_path string) (string, error) {
 }
 
 func DeleteHistory(cur_path string) error {
+	cur_path = strings.ReplaceAll(cur_path, "\\", "/")
 	db, err := sql.Open("sqlite3", "./filehistory.db")
 	if err != nil {
 		return err
@@ -80,10 +82,14 @@ func DeleteHistory(cur_path string) error {
 	if err != nil {
 		return err
 	}
-	_, err = stmt.Exec(cur_path)
+	ret, err := stmt.Exec(cur_path)
 	if err != nil {
 		return err
 	}
-	log.Printf("Succesfully delete %s FROM hist", cur_path)
+	num, err := ret.RowsAffected()
+	if err != nil {
+		return err
+	}
+	log.Printf("Succesfully delete %s FROM hist(affected %d row)", cur_path, num)
 	return nil
 }
