@@ -3,6 +3,8 @@ package main
 import (
 	"archive/zip"
 	"context"
+	"encoding/json"
+	"errors"
 	"fileserver/packages/dbfunc"
 	"fileserver/packages/utils"
 	"fmt"
@@ -19,6 +21,8 @@ import (
 	"syscall"
 	"time"
 
+	st "fileserver/packages/goset"
+
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
@@ -32,8 +36,9 @@ type BasicFileInfo struct {
 /* ####################Configuration##########################*/
 
 var Config = utils.InitConfig()
-var TRASH_PATH string = "trash"         //Path of trash
-var ROOT_UPLOAD_PATH string = "uploads" //cannot be changed
+var TRASH_PATH = "trash"                                     //Path of trash
+var ROOT_UPLOAD_PATH = "uploads"                             //cannot be changed
+var WhiteList = st.BuildFromRegularSlice(Config.IPWhiteList) // A set of whitelist
 
 /* ####################Configuration##########################*/
 
@@ -446,6 +451,17 @@ func AuthRequired(ctx *gin.Context) {
 	ctx.Next()
 }
 
+func IPRestriction(ctx *gin.Context) {
+	if WhiteList.IsExist(ctx.ClientIP()) {
+		ctx.Next()
+	} else {
+		ctx.JSON(http.StatusUnauthorized, gin.H{
+			"error": "IP is not allowed",
+		})
+		ctx.Abort()
+	}
+}
+
 // Check the correctness of guuid and give the permission
 func Login(ctx *gin.Context) {
 	session := sessions.Default(ctx)
@@ -519,11 +535,14 @@ func engine() *gin.Engine {
 	r.Use(sessions.Sessions("mysession", store))
 	// r.Use(gin.Logger()) //Show detail of requests
 
-	r.POST("/login", Login)
-	r.GET("/login", Login_Render)
-	r.POST("/logout", Logout)
+	r.Use(IPRestriction)
+	{
+		r.POST("/login", Login)
+		r.GET("/login", Login_Render)
+		r.POST("/logout", Logout)
+	}
 
-	r.Use(AuthRequired)
+	r.Use(AuthRequired, IPRestriction)
 	{
 		r.GET("/", IndexPage)
 		r.POST("/upload", UploadFile)
@@ -543,6 +562,21 @@ func engine() *gin.Engine {
 		r.GET("/session", GetSession)
 	}
 	return r
+}
+
+// SaveConfig when exit program
+func SaveConfig() error {
+	NewIPWhiteList := WhiteList.ToStrSlice()
+	Config.IPWhiteList = NewIPWhiteList
+	file, err := json.MarshalIndent(Config, "", " ")
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile("config.json", file, 0644)
+	if err != nil {
+		return errors.New("在儲存config.json時發生錯誤")
+	}
+	return nil
 }
 
 func main() {
@@ -575,7 +609,7 @@ func main() {
 	<-ch
 	log.Println("關閉伺服器-緩衝時間1秒")
 	ctx := context.Background()
-	c, cancel := context.WithTimeout(ctx, time.Second)
+	c, cancel := context.WithTimeout(ctx, time.Second*time.Duration(Config.StopDelaySecond))
 	defer cancel()
 	if err := srv.Shutdown(c); err != nil {
 		log.Println("強制關閉伺服器時發生錯誤", err)
@@ -583,5 +617,8 @@ func main() {
 	// close channel
 	<-c.Done()
 	close(ch)
+	if err := SaveConfig(); err != nil {
+		log.Println(err)
+	}
 	log.Println("已經完全關閉伺服器")
 }

@@ -19,7 +19,9 @@ type DiskSpace struct {
 }
 
 type Configuration struct {
-	ADMIN_GUUID string `json:"ADMIN_GUUID"`
+	ADMIN_GUUID     string   `json:"ADMIN_GUUID"`
+	IPWhiteList     []string `json:"IPWhiteList"`
+	StopDelaySecond int      `json:"StopDelaySecond"`
 }
 
 func Disk_Space(path string) (*DiskSpace, error) {
@@ -51,6 +53,7 @@ func Disk_Space(path string) (*DiskSpace, error) {
 	}
 }
 
+// Turn number of bytes into format string. Ex: 1024B,152KB,3GB,8XB
 func ByteFormat(num uint64) string {
 	const unit = 1024
 	if num < unit {
@@ -94,7 +97,9 @@ func create_default_config() {
 	if _, err := os.Stat("config.json"); os.IsNotExist(err) {
 		log.Println("未找到config.json，將以預設值創建。")
 		config := Configuration{
-			ADMIN_GUUID: "administrator",
+			ADMIN_GUUID:     "administrator",
+			IPWhiteList:     []string{"127.0.0.1"}, // Allow 127.0.0.1 to request
+			StopDelaySecond: 1,
 		}
 		file, err := json.MarshalIndent(config, "", " ")
 		if err != nil {
@@ -102,7 +107,7 @@ func create_default_config() {
 		}
 		err = ioutil.WriteFile("config.json", file, 0644)
 		if err != nil {
-			log.Fatal("Error when write default config.json", err)
+			log.Fatal("在創建預設的config.json時發生錯誤", err)
 		}
 	} else {
 		log.Println("成功加載config.json")
@@ -121,7 +126,7 @@ func InitConfig() Configuration {
 	if err != nil {
 		log.Fatal("Error when Unmarshal", err)
 	}
-	essential_path := [...]string{"trash", "uploads"}
+	essential_path := []string{"trash", "uploads"}
 	for _, path := range essential_path {
 		create_Folder_If_Path_Not_Exist(path)
 	}
