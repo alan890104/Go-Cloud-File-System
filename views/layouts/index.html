@@ -91,6 +91,9 @@
                 <button class="btn border-light text-light col-2 mr-1" id="trash_button">
                     <i class="fa fa-trash" style="color: white;"></i>檢視回收桶
                 </button>
+                <button class="btn border-light text-light col-2 mr-1" id="setting_button">
+                    <i class="fa fa-cog" style="color: white;"></i>查看設定
+                </button>
                 <a class="btn border-light text-light col-2" id="logout_button" href="/login">
                     <i class="fa fa-sign-out-alt" style="color: white;"></i>登出
                 </a>
@@ -272,6 +275,15 @@
             async:false,
             cache:false,
         });
+    })
+    $("#setting_button").on("click",function(){
+        $.ajax({
+            type:"GET",
+            url:"/setting",
+            success:function(){
+                window.location.href = "/setting"
+            }
+        })
     })
     $("#trash_button").on("click",function(){
         $.ajax({

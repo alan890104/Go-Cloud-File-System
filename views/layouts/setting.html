@@ -1,0 +1,498 @@
+<!DOCTYPE HTML>
+<html lang="zh-TW">
+
+<head>
+    <title>個人檔案伺服器</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="description" content="NYCU dropzone">
+    <meta name="keywords" content="dropzone, NYCU, JavaScript">
+    <meta name="author" content="alankingdom">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <script src="views\js\node_modules\jquery\dist\jquery.min.js"></script>
+    <script src="views\js\node_modules\bootstrap\dist\js\bootstrap.min.js"></script>
+    <script src="views\js\node_modules\dropzone\dist\dropzone.js"></script>
+    <script src="views\js\node_modules\@fortawesome\fontawesome-free\js\all.js"></script>
+    <script src="https://code.iconify.design/2/2.0.3/iconify.min.js"></script>
+
+    <link rel="stylesheet" href="views\js\node_modules\bootstrap\dist\css\bootstrap.min.css">
+    <link rel="stylesheet" href="views\js\node_modules\dropzone\dist\dropzone.css">
+    <link rel="stylesheet" href="views\js\node_modules\@fortawesome\fontawesome-free\css\fontawesome.min.css">
+    <link rel="stylesheet" href="views\js\node_modules\@fortawesome\fontawesome-free\css\all.min.css">
+    <style>
+        body {
+            background: #f5f5f5;
+        }
+
+        .ui-w-80 {
+            width: 80px !important;
+            height: auto;
+        }
+
+        .btn-default {
+            border-color: rgba(24, 28, 33, 0.1);
+            background: rgba(0, 0, 0, 0);
+            color: #4E5155;
+        }
+
+        label.btn {
+            margin-bottom: 0;
+        }
+
+        .btn-outline-primary {
+            border-color: #26B4FF;
+            background: transparent;
+            color: #26B4FF;
+        }
+
+        .btn {
+            cursor: pointer;
+        }
+
+        .text-light {
+            color: #babbbc !important;
+        }
+
+        .btn-facebook {
+            border-color: rgba(0, 0, 0, 0);
+            background: #3B5998;
+            color: #fff;
+        }
+
+        .btn-instagram {
+            border-color: rgba(0, 0, 0, 0);
+            background: #000;
+            color: #fff;
+        }
+
+        .card {
+            background-clip: padding-box;
+            box-shadow: 0 1px 4px rgba(24, 28, 33, 0.012);
+        }
+
+        .row-bordered {
+            overflow: hidden;
+        }
+
+        .account-settings-fileinput {
+            position: absolute;
+            visibility: hidden;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+        }
+
+        .account-settings-links .list-group-item.active {
+            font-weight: bold !important;
+        }
+
+        html:not(.dark-style) .account-settings-links .list-group-item.active {
+            background: transparent !important;
+        }
+
+        .account-settings-multiselect~.select2-container {
+            width: 100% !important;
+        }
+
+        .light-style .account-settings-links .list-group-item {
+            padding: 0.85rem 1.5rem;
+            border-color: rgba(24, 28, 33, 0.03) !important;
+        }
+
+        .light-style .account-settings-links .list-group-item.active {
+            color: #4e5155 !important;
+        }
+
+        .material-style .account-settings-links .list-group-item {
+            padding: 0.85rem 1.5rem;
+            border-color: rgba(24, 28, 33, 0.03) !important;
+        }
+
+        .material-style .account-settings-links .list-group-item.active {
+            color: #4e5155 !important;
+        }
+
+        .dark-style .account-settings-links .list-group-item {
+            padding: 0.85rem 1.5rem;
+            border-color: rgba(255, 255, 255, 0.03) !important;
+        }
+
+        .dark-style .account-settings-links .list-group-item.active {
+            color: #fff !important;
+        }
+
+        .light-style .account-settings-links .list-group-item.active {
+            color: #4E5155 !important;
+        }
+
+        .light-style .account-settings-links .list-group-item {
+            padding: 0.85rem 1.5rem;
+            border-color: rgba(24, 28, 33, 0.03) !important;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- NAV BAR START -->
+    <div class="pos-f-t">
+        <div class="collapse  show" id="navbarToggleExternalContent">
+            <div class="bg-dark p-4">
+                <!-- <div class="row"> -->
+                <h2 class="text-white">個人檔案伺服器</h2>
+
+                <!-- </div> -->
+                <span class="text-muted">快速、輕鬆、便捷的管理雲端資料.</span>
+            </div>
+        </div>
+
+        <nav class="navbar navbar-dark bg-dark">
+            <button class="navbar-toggler" type="button" data-toggle="collapse"
+                data-target="#navbarToggleExternalContent" aria-controls="navbarToggleExternalContent"
+                aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class=" col d-flex justify-content-end">
+                <a class="btn border-light text-light col-2 mr-1" href="/">
+                    <i class="fa fa-home" style="color: white;"></i>回到首頁
+                </a>
+                <a class="btn border-light text-light col-2" id="logout_button" href="/login">
+                    <i class="fa fa-sign-out-alt" style="color: white;"></i>登出
+                </a>
+            </div>
+        </nav>
+    </div>
+    <!-- NAV BAR END -->
+    <!-- CONTENT START -->
+    <div class="container light-style flex-grow-1 container-p-y">
+
+        <h4 class="font-weight-bold py-3 mb-4">
+            設定
+        </h4>
+
+        <div class="card overflow-hidden">
+            <div class="row no-gutters row-bordered row-border-light">
+                <div class="col-md-3 pt-0">
+                    <div class="list-group list-group-flush account-settings-links">
+                        <a class="list-group-item list-group-item-action active" data-toggle="list"
+                            href="#account-general">帳號設定</a>
+                        <!-- <a class="list-group-item list-group-item-action" data-toggle="list"
+                            href="#account-change-password">Change password</a> -->
+                        <a class="list-group-item list-group-item-action" data-toggle="list"
+                            href="#account-info">一般設定</a>
+                        <!-- <a class="list-group-item list-group-item-action" data-toggle="list"
+                            href="#account-social-links">Social links</a>
+                        <a class="list-group-item list-group-item-action" data-toggle="list"
+                            href="#account-connections">Connections</a>
+                        <a class="list-group-item list-group-item-action" data-toggle="list"
+                            href="#account-notifications">Notifications</a> -->
+                    </div>
+                </div>
+                <div class="col-md-9">
+                    <div class="tab-content">
+                        <div class="tab-pane fade active show" id="account-general">
+
+                            <div class="card-body media align-items-center">
+                                <img src="views\image\user.png" alt="" class="d-block ui-w-80">
+                                <div class="media-body ml-4">
+                                    <label class="btn btn-outline-primary">
+                                        上傳新的頭像
+                                        <input type="file" class="account-settings-fileinput">
+                                    </label> &nbsp;
+                                    <button type="button" class="btn btn-default md-btn-flat">重設</button>
+
+                                    <div class="text-light small mt-1">允許 JPG, GIF or PNG. 最多 800KB</div>
+                                </div>
+                            </div>
+                            <hr class="border-light m-0">
+
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label class="form-label">使用者名稱</label>
+                                    <input type="text" class="form-control mb-1" value="User" disabled>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">GUUID</label>
+                                    <input type="text" class="form-control" value="{{.ADMIN_GUUID}}" disabled>
+                                </div>
+                                <!-- <div class="form-group">
+                                    <label class="form-label">信箱</label>
+                                    <input type="text" class="form-control mb-1" value="nmaxwell@mail.com" disabled>
+                                    <div class="alert alert-warning mt-3">
+                                        您的信箱未經開通，請點此連結以核可<br>
+                                        <a href="javascript:void(0)">重新傳送驗證信</a>
+                                    </div>
+                                </div> -->
+                            </div>
+
+                        </div>
+                        <!-- <div class="tab-pane fade" id="account-change-password">
+                            <div class="card-body pb-2">
+
+                                <div class="form-group">
+                                    <label class="form-label">Current password</label>
+                                    <input type="password" class="form-control">
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">New password</label>
+                                    <input type="password" class="form-control">
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">Repeat new password</label>
+                                    <input type="password" class="form-control">
+                                </div>
+
+                            </div>
+                        </div> -->
+                        <div class="tab-pane fade" id="account-info">
+                            <div class="card-body pb-2">
+                                <div class="form-group">
+                                    <label class="form-label">結束緩衝時間</label>
+                                    <select class="custom-select" disabled>
+                                        <option>{{.StopDelaySecond}}秒</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" id="ip-form">
+                                    <label class="form-label">IP白名單</label>
+                                    {{ range $key, $value := .WhiteList}}
+                                    {{if $value}}
+                                    <div class="input-group mb-2">
+                                        <input type="text" class="form-control ip_value" value="{{$key}}" disabled>
+                                    </div>
+                                    {{else}}
+                                    <div class="input-group mb-2 ">
+                                        <input type="text" class="form-control ip_value" value="{{$key}}">
+                                        <div class="input-group-append">
+                                            <button
+                                                class="input-group-text btn bg-danger text-white del_ip_button">刪除</button>
+                                        </div>
+                                    </div>
+                                    {{end}}
+                                    {{ end }}
+                                </div>
+                                <div>
+                                    <div class="input-group mb-2 ">
+                                        <input type="text" class="form-control ip_value" value="" />
+                                        <div class="input-group-append">
+                                            <button class="btn btn-success" id="Add_IP">添加IP</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <!-- </div>
+                        <div class="tab-pane fade" id="account-social-links">
+                            <div class="card-body pb-2">
+
+                                <div class="form-group">
+                                    <label class="form-label">Twitter</label>
+                                    <input type="text" class="form-control" value="https://twitter.com/user">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Facebook</label>
+                                    <input type="text" class="form-control" value="https://www.facebook.com/user">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Google+</label>
+                                    <input type="text" class="form-control" value="">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">LinkedIn</label>
+                                    <input type="text" class="form-control" value="">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Instagram</label>
+                                    <input type="text" class="form-control" value="https://www.instagram.com/user">
+                                </div>
+
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="account-connections">
+                            <div class="card-body">
+                                <button type="button" class="btn btn-twitter">Connect to
+                                    <strong>Twitter</strong></button>
+                            </div>
+                            <hr class="border-light m-0">
+                            <div class="card-body">
+                                <h5 class="mb-2">
+                                    <a href="javascript:void(0)" class="float-right text-muted text-tiny"><i
+                                            class="ion ion-md-close"></i> Remove</a>
+                                    <i class="ion ion-logo-google text-google"></i>
+                                    You are connected to Google:
+                                </h5>
+                                nmaxwell@mail.com
+                            </div>
+                            <hr class="border-light m-0">
+                            <div class="card-body">
+                                <button type="button" class="btn btn-facebook">Connect to
+                                    <strong>Facebook</strong></button>
+                            </div>
+                            <hr class="border-light m-0">
+                            <div class="card-body">
+                                <button type="button" class="btn btn-instagram">Connect to
+                                    <strong>Instagram</strong></button>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="account-notifications">
+                            <div class="card-body pb-2">
+
+                                <h6 class="mb-4">Activity</h6>
+
+                                <div class="form-group">
+                                    <label class="switcher">
+                                        <input type="checkbox" class="switcher-input" checked="">
+                                        <span class="switcher-indicator">
+                                            <span class="switcher-yes"></span>
+                                            <span class="switcher-no"></span>
+                                        </span>
+                                        <span class="switcher-label">Email me when someone comments on my article</span>
+                                    </label>
+                                </div>
+                                <div class="form-group">
+                                    <label class="switcher">
+                                        <input type="checkbox" class="switcher-input" checked="">
+                                        <span class="switcher-indicator">
+                                            <span class="switcher-yes"></span>
+                                            <span class="switcher-no"></span>
+                                        </span>
+                                        <span class="switcher-label">Email me when someone answers on my forum
+                                            thread</span>
+                                    </label>
+                                </div>
+                                <div class="form-group">
+                                    <label class="switcher">
+                                        <input type="checkbox" class="switcher-input">
+                                        <span class="switcher-indicator">
+                                            <span class="switcher-yes"></span>
+                                            <span class="switcher-no"></span>
+                                        </span>
+                                        <span class="switcher-label">Email me when someone follows me</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <hr class="border-light m-0">
+                            <div class="card-body pb-2">
+
+                                <h6 class="mb-4">Application</h6>
+
+                                <div class="form-group">
+                                    <label class="switcher">
+                                        <input type="checkbox" class="switcher-input" checked="">
+                                        <span class="switcher-indicator">
+                                            <span class="switcher-yes"></span>
+                                            <span class="switcher-no"></span>
+                                        </span>
+                                        <span class="switcher-label">News and announcements</span>
+                                    </label>
+                                </div>
+                                <div class="form-group">
+                                    <label class="switcher">
+                                        <input type="checkbox" class="switcher-input">
+                                        <span class="switcher-indicator">
+                                            <span class="switcher-yes"></span>
+                                            <span class="switcher-no"></span>
+                                        </span>
+                                        <span class="switcher-label">Weekly product updates</span>
+                                    </label>
+                                </div>
+                                <div class="form-group">
+                                    <label class="switcher">
+                                        <input type="checkbox" class="switcher-input" checked="">
+                                        <span class="switcher-indicator">
+                                            <span class="switcher-yes"></span>
+                                            <span class="switcher-no"></span>
+                                        </span>
+                                        <span class="switcher-label">Weekly blog digest</span>
+                                    </label>
+                                </div>
+
+                            </div>
+                        </div> -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="text-right mt-3 mb-3 mr-3">
+                <!-- <button type="button" class="btn btn-primary">儲存設定</button>&nbsp;
+                <button type="button" class="btn btn-default">取消</button> -->
+            </div>
+        </div>
+        <!-- CONTENT END -->
+</body>
+
+</html>
+
+<script>
+    /* Check if string is IP */
+    function checkIfValidIP(str) {
+        // Regular expression to check if string is a IP address
+        const regexExp = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/gi;
+
+        return regexExp.test(str);
+    }
+
+    $("#Add_IP").on("click", function (e) {
+        e.preventDefault();
+        var tmp = $(this).parent().parent();
+        if (!checkIfValidIP(tmp.children(".ip_value").val())) {
+            alert("請填寫正確的IP");
+            return
+        } else {
+            var value = tmp.children(".ip_value").val();
+            $.ajax({
+                type: "PUT",
+                url: "/AddIPRestriction/" + value,
+                success: function () {
+                    $("#ip-form").append(`<div class="input-group mb-2 ">
+                                        <input type="text" class="form-control ip_value" value="${value}">
+                                        <div class="input-group-append">
+                                            <button
+                                                class="input-group-text btn bg-danger text-white del_ip_button">刪除</button>
+                                        </div>
+                                    </div>`)
+                    tmp.children(".ip_value").val("").focus()
+                    $(".del_ip_button").on("click", function (e) {
+                        e.preventDefault();
+                        var row = $(this).parent().parent()
+                        $.ajax({
+                            type: "DELETE",
+                            url: "/RemoveIPRestriction/" + row.children(".ip_value").val(),
+                            success: function () {
+                                row.detach()
+                            },
+                            error: function () {
+                                alert("此IP無法刪除")
+                            }
+                        })
+                    })
+                },
+                error: function () {
+                    alert("添加時發生錯誤")
+                }
+            })
+
+        }
+    })
+    $(".del_ip_button").on("click", function (e) {
+        e.preventDefault();
+        var row = $(this).parent().parent()
+        $.ajax({
+            type: "DELETE",
+            url: "/RemoveIPRestriction/" + row.children(".ip_value").val(),
+            success: function () {
+                row.detach()
+            },
+            error: function () {
+                alert("此IP無法刪除")
+            }
+        })
+    })
+    $("#logout_button").on("click", function () {
+        $.ajax({
+            type: "POST",
+            url: "/logout",
+        });
+    })
+</script>

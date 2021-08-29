@@ -342,6 +342,7 @@ function reload_download_list() {
             if(all_files["permission"]=="visitor"){
                 $(".del_button").hide()
                 $("#trash_button").hide()
+                $("#setting_button").hide()
             }
             $('.breadcrumb-item').remove();
             if (current_path.length == 0) {

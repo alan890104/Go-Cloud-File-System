@@ -21,9 +21,8 @@ import (
 	"syscall"
 	"time"
 
-	st "fileserver/packages/goset"
-
-	"github.com/gin-gonic/contrib/sessions"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 )
 
@@ -36,9 +35,10 @@ type BasicFileInfo struct {
 /* ####################Configuration##########################*/
 
 var Config = utils.InitConfig()
-var TRASH_PATH = "trash"                                     //Path of trash
-var ROOT_UPLOAD_PATH = "uploads"                             //cannot be changed
-var WhiteList = st.BuildFromRegularSlice(Config.IPWhiteList) // A set of whitelist
+var TRASH_PATH = "trash"           //Path of trash
+var ROOT_UPLOAD_PATH = "uploads"   //cannot be changed
+var WhiteList = Config.IPWhiteList // A set of whitelist
+var SERVER_IP = fmt.Sprint(utils.GetOutboundIP())
 
 /* ####################Configuration##########################*/
 
@@ -441,6 +441,14 @@ func IndexPage(ctx *gin.Context) {
 	ctx.HTML(http.StatusOK, "index.html", nil)
 }
 
+func SettingPage(ctx *gin.Context) {
+	ctx.HTML(http.StatusOK, "setting.html", gin.H{
+		"ADMIN_GUUID":     Config.ADMIN_GUUID,
+		"StopDelaySecond": Config.StopDelaySecond,
+		"WhiteList":       WhiteList,
+	})
+}
+
 func AuthRequired(ctx *gin.Context) {
 	session := sessions.Default(ctx)
 	permission := session.Get("permission")
@@ -452,7 +460,7 @@ func AuthRequired(ctx *gin.Context) {
 }
 
 func IPRestriction(ctx *gin.Context) {
-	if WhiteList.IsExist(ctx.ClientIP()) {
+	if _, exist := WhiteList[ctx.ClientIP()]; exist {
 		ctx.Next()
 	} else {
 		ctx.JSON(http.StatusUnauthorized, gin.H{
@@ -460,6 +468,41 @@ func IPRestriction(ctx *gin.Context) {
 		})
 		ctx.Abort()
 	}
+}
+
+// Check user permission
+func CheckPermission(ctx *gin.Context) {
+	session := sessions.Default(ctx)
+	permission := session.Get("permission")
+	switch permission {
+	case "admin":
+		ctx.Next()
+	default:
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+}
+
+// A PUT request to add ip whitelist
+func AddIPRestriction(ctx *gin.Context) {
+	allow_ip := ctx.Param("allow_ip")
+	if allow_ip != "127.0.0.1" && allow_ip != SERVER_IP {
+		WhiteList[allow_ip] = false
+		ctx.Status(http.StatusOK)
+		return
+	}
+	ctx.Status(http.StatusNotAcceptable)
+}
+
+// A DELETE request to delete ip whitelist
+func RemoveIPRestriction(ctx *gin.Context) {
+	remove_ip := ctx.Param("remove_ip")
+	if remove_ip != "127.0.0.1" && remove_ip != SERVER_IP {
+		delete(WhiteList, remove_ip)
+		ctx.Status(http.StatusOK)
+		return
+	}
+	ctx.Status(http.StatusNotAcceptable)
 }
 
 // Check the correctness of guuid and give the permission
@@ -479,9 +522,6 @@ func Login(ctx *gin.Context) {
 		session.Set("permission", "visitor")
 	default:
 		{
-			// ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-			// 	"err": "無法識別的GUUID",
-			// })
 			ctx.String(http.StatusUnauthorized, "無法識別的GUUID")
 			log.Println("Get guuid", "無法識別的GUUID")
 			return
@@ -525,49 +565,52 @@ func Logout(ctx *gin.Context) {
 }
 
 func engine() *gin.Engine {
-	gin.SetMode(gin.ReleaseMode)
+	gin.SetMode(gin.DebugMode)
 	r := gin.New()
 	r.MaxMultipartMemory = 2 << 32
 	r.Static("/views", "./views")
 	r.LoadHTMLGlob("views/layouts/*")
 
-	store := sessions.NewCookieStore([]byte("secret"))
+	store := cookie.NewStore([]byte("secret"))
 	r.Use(sessions.Sessions("mysession", store))
 	// r.Use(gin.Logger()) //Show detail of requests
 
-	r.Use(IPRestriction)
-	{
-		r.POST("/login", Login)
-		r.GET("/login", Login_Render)
-		r.POST("/logout", Logout)
-	}
+	low_level := r.Group("/").Use(IPRestriction)
+	mid_level := r.Group("/").Use(IPRestriction, AuthRequired)
+	high_level := r.Group("/").Use(IPRestriction, CheckPermission)
 
-	r.Use(AuthRequired, IPRestriction)
-	{
-		r.GET("/", IndexPage)
-		r.POST("/upload", UploadFile)
-		r.POST("/ChangePath", Go_To_Path)
-		r.POST("/Go_abs_Path", Go_abs_Path)
-		r.GET("/Go_Back", Go_Back)
-		r.GET("/ls", ListFile)
-		r.GET("downloads/:filename", DownloadFile)
-		r.POST("/delete/:filename", DeleteFile)
-		r.GET("/trash", TrashFilesRender)
-		r.POST("/trash/list", ListTrash)
-		r.POST("recover/:filename", Recover)
-		r.GET("/create/:foldername", CreateFolder)
-		r.POST("/rename", RenamePath)
-		r.POST("/movetofolder", MoveToFolder)
-		r.GET("/freespace", FreeSpace)
-		r.GET("/session", GetSession)
-	}
+	low_level.POST("/login", Login)
+	low_level.GET("/login", Login_Render)
+	low_level.POST("/logout", Logout)
+
+	mid_level.GET("/", IndexPage)
+	mid_level.POST("/upload", UploadFile)
+	mid_level.POST("/ChangePath", Go_To_Path)
+	mid_level.POST("/Go_abs_Path", Go_abs_Path)
+	mid_level.GET("/Go_Back", Go_Back)
+	mid_level.GET("/ls", ListFile)
+	mid_level.GET("downloads/:filename", DownloadFile)
+	mid_level.POST("/delete/:filename", DeleteFile)
+	mid_level.GET("/trash", TrashFilesRender)
+	mid_level.POST("/trash/list", ListTrash)
+	mid_level.POST("recover/:filename", Recover)
+	mid_level.GET("/create/:foldername", CreateFolder)
+	mid_level.POST("/rename", RenamePath)
+	mid_level.POST("/movetofolder", MoveToFolder)
+	mid_level.GET("/freespace", FreeSpace)
+	mid_level.GET("/session", GetSession)
+
+	// Only allow_ip and admin can access the route
+	high_level.GET("/setting", SettingPage)
+	high_level.PUT("/AddIPRestriction/:allow_ip", AddIPRestriction)
+	high_level.DELETE("/RemoveIPRestriction/:remove_ip", RemoveIPRestriction)
 	return r
 }
 
 // SaveConfig when exit program
 func SaveConfig() error {
-	NewIPWhiteList := WhiteList.ToStrSlice()
-	Config.IPWhiteList = NewIPWhiteList
+	delete(WhiteList, SERVER_IP)
+	Config.IPWhiteList = WhiteList
 	file, err := json.MarshalIndent(Config, "", " ")
 	if err != nil {
 		return err
@@ -580,11 +623,12 @@ func SaveConfig() error {
 }
 
 func main() {
-	log.Println("您的GUUID為", Config.ADMIN_GUUID)
 	dbfunc.InitializeDB()
 	router := engine()
 	router.Use(gin.Logger())
-	log.Printf("將於 http://%s:5000 開啟伺服器", utils.GetOutboundIP())
+	WhiteList[SERVER_IP] = true
+	log.Println("您的GUUID為", Config.ADMIN_GUUID)
+	log.Printf("將於 http://%s:5000 開啟伺服器", SERVER_IP)
 	if dir, err := os.Getwd(); err != nil {
 		log.Fatal("工作目錄錯誤: ", err)
 		os.Exit(1)
@@ -607,12 +651,12 @@ func main() {
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	// block channel
 	<-ch
-	log.Println("關閉伺服器-緩衝時間1秒")
+	log.Printf("關閉伺服器-緩衝時間%d秒\n", Config.StopDelaySecond)
 	ctx := context.Background()
 	c, cancel := context.WithTimeout(ctx, time.Second*time.Duration(Config.StopDelaySecond))
 	defer cancel()
 	if err := srv.Shutdown(c); err != nil {
-		log.Println("強制關閉伺服器時發生錯誤", err)
+		log.Println("強制關閉伺服器時發生錯誤:", err)
 	}
 	// close channel
 	<-c.Done()

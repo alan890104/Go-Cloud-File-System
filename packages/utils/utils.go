@@ -19,9 +19,9 @@ type DiskSpace struct {
 }
 
 type Configuration struct {
-	ADMIN_GUUID     string   `json:"ADMIN_GUUID"`
-	IPWhiteList     []string `json:"IPWhiteList"`
-	StopDelaySecond int      `json:"StopDelaySecond"`
+	ADMIN_GUUID     string          `json:"ADMIN_GUUID"`
+	IPWhiteList     map[string]bool `json:"IPWhiteList"`
+	StopDelaySecond int             `json:"StopDelaySecond"`
 }
 
 func Disk_Space(path string) (*DiskSpace, error) {
@@ -97,8 +97,10 @@ func create_default_config() {
 	if _, err := os.Stat("config.json"); os.IsNotExist(err) {
 		log.Println("未找到config.json，將以預設值創建。")
 		config := Configuration{
-			ADMIN_GUUID:     "administrator",
-			IPWhiteList:     []string{"127.0.0.1"}, // Allow 127.0.0.1 to request
+			ADMIN_GUUID: "administrator",
+			IPWhiteList: map[string]bool{
+				"127.0.0.1": true, // Allow 127.0.0.1 to request
+			},
 			StopDelaySecond: 1,
 		}
 		file, err := json.MarshalIndent(config, "", " ")
