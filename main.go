@@ -122,10 +122,11 @@ func ListFile(ctx *gin.Context) {
 	data := []BasicFileInfo{}
 	folder := []BasicFileInfo{}
 	for _, f := range files {
+		modify_utc_time := f.ModTime().Add(-time.Hour * 6) // to make modtime correct at frontend
 		tmp := BasicFileInfo{
 			Name: f.Name(),
 			Size: f.Size(),
-			Time: f.ModTime().Local().String()}
+			Time: modify_utc_time.String()}
 		if f.IsDir() {
 			folder = append(folder, tmp)
 		} else {
