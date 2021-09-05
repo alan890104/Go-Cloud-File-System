@@ -629,7 +629,7 @@ func main() {
 	router.Use(gin.Logger())
 	WhiteList[SERVER_IP] = true
 	log.Println("您的GUUID為", Config.ADMIN_GUUID)
-	log.Printf("將於 https://%s:5000 開啟伺服器", SERVER_IP)
+	log.Printf("將於 http://%s:5000 開啟伺服器", SERVER_IP)
 	if dir, err := os.Getwd(); err != nil {
 		log.Fatal("工作目錄錯誤: ", err)
 		os.Exit(1)
@@ -644,7 +644,7 @@ func main() {
 	// Create channel
 	ch := make(chan os.Signal, 1)
 	go func() {
-		if err := srv.ListenAndServeTLS("cert/cert.pem", "cert/key.pem"); err != nil && err != http.ErrServerClosed {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Println("無法啟動伺服器", err)
 		}
 	}()
