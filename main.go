@@ -567,7 +567,7 @@ func Logout(ctx *gin.Context) {
 
 func engine() *gin.Engine {
 	gin.SetMode(gin.DebugMode)
-	r := gin.New()
+	r := gin.Default()
 	r.MaxMultipartMemory = 2 << 32
 	r.Static("/views", "./views")
 	r.LoadHTMLGlob("views/layouts/*")
@@ -626,7 +626,6 @@ func SaveConfig() error {
 func main() {
 	dbfunc.InitializeDB()
 	router := engine()
-	router.Use(gin.Logger())
 	WhiteList[SERVER_IP] = true
 	log.Println("您的GUUID為", Config.ADMIN_GUUID)
 	log.Printf("將於 http://%s:5000 開啟伺服器", SERVER_IP)
